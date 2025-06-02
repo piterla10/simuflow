@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, Output, EventEmitter} from '@angular/core';
 
 @Component({
   selector: 'app-cargar-crear',
@@ -7,5 +7,10 @@ import { Component } from '@angular/core';
   styleUrl: './cargar-crear.component.scss'
 })
 export class CargarCrearComponent {
+  @Output() cambiar = new EventEmitter<number>();
+
+  cambiarComp(n: number) {
+    this.cambiar.emit(n);
+  }
 
 }

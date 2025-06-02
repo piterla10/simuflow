@@ -1,1 +1,6 @@
-<p>inicio works!</p>
+<section class="recuadros-inicio">
+    <img src="assets/Logo_sin_fondo.png" alt="logo" >
+    <app-cargar-crear [hidden]="comp !== 0" (cambiar)="cambiarComp($event)"></app-cargar-crear>
+    <app-crear [hidden]="comp !== 1" (cambiar)="cambiarComp($event)"></app-crear>
+    <app-cargar [hidden]="comp !== 2" (cambiar)="cambiarComp($event)"></app-cargar>
+<section>

@@ -1,0 +1,17 @@
+.recuadros-inicio{
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  height: 100vh; /* ocupa toda la altura de la ventana */
+}
+
+img{
+  position: absolute;
+  // esto funciona rarete por utilizar absolute en img lo que hace que se salga del
+  // flexbox del padre y no se pueda colocar bien utilizando top, pero de esta forma
+  // se ve bien igualmente
+  bottom: 900px; 
+  width: 300px;
+}
+

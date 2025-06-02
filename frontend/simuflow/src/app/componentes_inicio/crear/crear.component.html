@@ -1,1 +1,18 @@
-<p>crear works!</p>
+<div class="recuadro">
+    <h2>Introduce los detalles para crear el sistema a simular</h2>
+    <form [formGroup]="form" (ngSubmit)="enviarFormulario()">
+        <label for="nombre">Nombre del sistema</label>
+        <input type="text" formControlName="nombre" placeholder="nombre">
+        <label>Tamaño</label>
+        <fieldset>
+            <span class="tamanyo">
+                <input type="number" formControlName="ancho" placeholder="ancho">
+                x
+                <input type="number" formControlName="alto" placeholder="altura">
+            </span>
+        </fieldset>
+        <button type="submit">Crear</button>
+        <button type="button" (click)="cambiarComp(0)">Cancelar</button>
+
+    </form>
+</div>

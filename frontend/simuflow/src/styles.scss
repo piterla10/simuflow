@@ -1,1 +1,49 @@
-/* You can add global styles to this file, and also import other style files */
+/* Colores base */
+:root {
+  --color-azul: #252360;
+  --color-fondo: #121130;
+  --color-azul2: #1C1A48;
+  --amarillo: #fdf972;
+  --blanco1: #ececec;
+  --blanco2: #bababa;
+  --rojo: #dc3545;
+  --negro: #222222;
+}
+
+// Fuente del texto
+html{
+  font-family: "Nunito Sans", sans-serif;
+  font-optical-sizing: auto;
+}
+
+/* Estilos generales */
+body {
+  background-color: var(--color-fondo);
+  color: var(--blanco1);
+  margin: 0;
+  padding: 0;
+  align-content: center;
+}
+
+html, body{
+  min-height: 100vh;
+}
+
+footer {
+  position: absolute;
+  bottom: 10px;
+  color: #bababa; /* blanco secundario */
+}
+/* Textos secundarios */
+.text-secondary {
+  color: var(--blanco2);
+}
+
+/* Errores y advertencias */
+.text-error {
+  color: var(--rojo);
+}
+
+.text-warning {
+  color: var(--amarillo);
+}
