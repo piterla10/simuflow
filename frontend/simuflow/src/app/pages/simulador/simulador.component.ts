@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { NavbarComponent } from "../../componentes_comunes/navbar/navbar.component";
-import { FormularioService } from '../../services/FormularioService';
+import { InicioService } from '../../services/InicioService';
 
 @Component({
   selector: 'app-simulador',
@@ -9,11 +9,15 @@ import { FormularioService } from '../../services/FormularioService';
   styleUrl: './simulador.component.scss'
 })
 export class SimuladorComponent implements OnInit {
-  constructor(private formularioService: FormularioService){}
+  constructor(private inicioService: InicioService){}
+  datos: any;
+  archivo: File | null = null;
 
   ngOnInit(){
-    const datos = this.formularioService.getDatos();
-    console.log(datos);
+    this.datos = this.inicioService.getDatos();
+    this.archivo = this.inicioService.getArchivo();
+    console.log(this.datos);
+    console.log(this.archivo);
   }
 
 }

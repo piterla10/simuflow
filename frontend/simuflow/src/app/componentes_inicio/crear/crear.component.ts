@@ -1,5 +1,5 @@
 import { Component, EventEmitter, inject, Injectable, OnInit, Output } from '@angular/core';
-import { FormularioService } from '../../services/FormularioService';
+import { InicioService } from '../../services/InicioService';
 import { Router } from '@angular/router';
 import { FormGroup, FormControl, Validators, ReactiveFormsModule } from '@angular/forms';
 
@@ -11,7 +11,7 @@ import { FormGroup, FormControl, Validators, ReactiveFormsModule } from '@angula
   styleUrl: './crear.component.scss'
 })
 export class CrearComponent implements OnInit{
-  constructor(private formularioService: FormularioService, private router: Router) {  }
+  constructor(private inicioService: InicioService, private router: Router) {  }
   @Output() cambiar = new EventEmitter<number>();
   
   form!: FormGroup;
@@ -30,7 +30,7 @@ export class CrearComponent implements OnInit{
 
   enviarFormulario() {
      if (this.form.valid) {
-      this.formularioService.setDatos(this.form.value);
+      this.inicioService.setDatos(this.form.value);
       this.router.navigate(['/simulador']);
     }
   }

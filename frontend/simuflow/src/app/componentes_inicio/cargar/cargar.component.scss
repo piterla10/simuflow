@@ -16,7 +16,7 @@ button{
   font-weight: bold;
   font-size: 1.3rem;
   color: var(--blanco1);
-  width: 200px;
+  width: 160px;
   border: 1px solid var(--blanco2);
   padding: 0.6rem;
   margin: 0.4rem 0rem;
@@ -27,4 +27,28 @@ button{
 button:hover{
     background-color: var(--color-azul2);
     box-shadow: 0 0.1rem 0.4rem var(--color-fondo);
+}
+
+form{
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  text-align: center;
+}
+
+form input{
+  font-size: 1.3rem;
+  margin: 0.3rem;
+  padding: 0.3rem;
+}
+
+form input{
+  color: var(--negro);
+}
+
+.botones{
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    margin-top: 1rem;
 }

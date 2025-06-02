@@ -16,7 +16,7 @@ button{
   font-weight: bold;
   font-size: 1.3rem;
   color: var(--blanco1);
-  width: 200px;
+  width: 160px;
   border: 1px solid var(--blanco2);
   padding: 0.6rem;
   margin: 0.4rem 0rem;
@@ -66,6 +66,14 @@ fieldset{
 .tamanyo input{
     width: 70px;
 }
+
+.botones{
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    margin-top: 1rem;
+}
+
 
 /* Quitar flechas en Chrome, Safari, Edge */
 input[type="number"]::-webkit-inner-spin-button,

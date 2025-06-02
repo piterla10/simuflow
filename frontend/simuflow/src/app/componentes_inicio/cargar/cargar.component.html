@@ -1,4 +1,10 @@
-<div class="recuadro">
-    <h2>Contenido de cargar</h2>
-    <button (click)="cambiarComp()">Ir a crear</button>
-</div>
+<article class="recuadro">
+    <h2>Selecciona el esquema a simular</h2>
+    <form (ngSubmit)="enviarFormulario($event)">
+        <input type="file" name="archivo" accept=".js" required (change)="guardarArchivo($event)">
+        <span class="botones">
+            <button type="submit">Cargar</button>
+            <button type="button" (click)="cambiarComp(0)">Cancelar</button>
+        </span>
+    </form>
+</article>
