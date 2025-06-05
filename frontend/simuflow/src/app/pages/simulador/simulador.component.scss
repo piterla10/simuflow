@@ -1,0 +1,84 @@
+.menu{
+  width: 70vw;
+  margin: 0 auto;
+  height: 60px;
+  display: flex;
+  justify-content: flex-start;
+}
+
+.menu article{
+  background-color: var(--color-azul);
+  display: flex;
+  border-top: 1px solid white;
+  border-left: 1px solid white;
+  border-right: 1px solid white;
+  padding: 0.5rem;
+  gap: 2px;
+  align-items: center;
+  justify-content: center;
+}
+
+.menu article:nth-child(1) {
+  min-width: 325px;
+}
+
+.menu article:nth-child(1) button{
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;  
+  background-color: var(--color-azul);
+  font-weight: bold;
+  font-size: 1.2rem;
+  color: var(--blanco1);
+  border: 1px solid var(--blanco2);
+  padding: 0.6rem;
+  margin: 0.4rem 0rem;
+  cursor: pointer;
+}
+
+.menu article:nth-child(1) button:not(.activo):hover{
+  background-color: var(--color-azul2);
+  box-shadow: 0 0.1rem 0.4rem var(--color-fondo);
+}
+
+.menu article:nth-child(1) button.activo{
+  background-color: var(--color-fondo);
+  box-shadow: none;
+  cursor: default;
+}
+
+.menu article:nth-child(2) {
+  width: 600px;
+}
+
+/* Contenedor exterior: ocupa 95 % de ancho del viewport y centra el grid */
+.grid-container {
+  width: 95vw;
+  margin: 0 auto;
+  height: 70vh;
+  border: 2px white solid;
+}
+
+/* Este es el grid principal */
+.grid {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  /* Las variables --cols y --rows vienen del TypeScript */
+  grid-template-columns: repeat(var(--cols), 1fr);
+  grid-template-rows: repeat(var(--rows), 1fr);
+  background-color: var(--blanco1);
+}
+
+/* cada celda hereda la fracción de ancho de su columna y el alto se ajusta al contenido */
+.cell {
+  border: 1px solid #999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  color: var(--negro);
+  border: 1px var(--color-azul) dashed;
+}
+
+.cell.selected {
+  border: 1px solid blue;
+}

@@ -1,2 +1,31 @@
 <app-navbar></app-navbar>
-<p>simulador works!</p>
+<section class="menu">
+    <article>
+        <button type="button" 
+            (click)="setModo('edicion')" 
+            [class.activo]="modoActivo === 'edicion'">
+            Modo edición
+        </button>
+        <button type="button"
+            (click)="setModo('simulacion')"
+            [class.activo]="modoActivo === 'simulacion'">
+            Modo simulación
+        </button>
+    </article>
+    <article>
+        <app-herramientas-edicion *ngIf="modoActivo === 'edicion'"></app-herramientas-edicion>
+        <app-herramientas-simulacion *ngIf="modoActivo === 'simulacion'"></app-herramientas-simulacion>
+    </article>
+</section>
+<section class="grid-container">
+    <article class="grid"
+    [style.--cols]="columnas"
+    [style.--rows]="filas">
+        <div class="cell"
+        *ngFor="let cell of flatGrid"
+        [class.selected]="celdaSeleccionada === cell"
+        (click)="onCellClick(cell)">
+        {{ cell.content?.type || '' }}
+        </div>
+    </article>
+</section>

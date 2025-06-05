@@ -1,0 +1,18 @@
+
+img {
+  position: absolute;
+  top: 20px; /* Ajusta según necesites */
+  z-index: 10; /* Asegura que estén por encima del contenido */
+}
+
+.menu{
+  left: 2vw;
+  top: 35px;
+  width: 60px;
+  cursor: pointer; 
+}
+
+.logo{
+  right: 2vw; 
+  width: 100px;
+}

@@ -14,6 +14,10 @@ export class CrearComponent implements OnInit{
   constructor(private inicioService: InicioService, private router: Router) {  }
   @Output() cambiar = new EventEmitter<number>();
   
+  cambiarComp(n: number) {
+    this.cambiar.emit(n); 
+  }
+  
   form!: FormGroup;
   
   ngOnInit(): void {
@@ -24,9 +28,6 @@ export class CrearComponent implements OnInit{
     });
   }
 
-  cambiarComp(n: number) {
-    this.cambiar.emit(n); 
-  }
 
   enviarFormulario() {
      if (this.form.valid) {

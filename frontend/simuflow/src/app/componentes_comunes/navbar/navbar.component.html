@@ -1,1 +1,9 @@
-<p>navbar works!</p>
+
+<img class="menu" src="assets/menu.png" alt="Menu hamburguesa" (click)="abrirModal()">
+<img class="logo" src="assets/Logo_sin_fondo_con_letras.png" alt="Logo de la pagina">
+
+<app-modal-opciones 
+  #modal
+  (guardar)="onGuardarClick()"
+  (cargar)="onCargarClick()">
+</app-modal-opciones>

@@ -3,6 +3,8 @@ import { CargarCrearComponent } from "../../componentes_inicio/cargar-crear/carg
 import { CargarComponent } from "../../componentes_inicio/cargar/cargar.component";
 import { CrearComponent } from '../../componentes_inicio/crear/crear.component';
 import { CommonModule } from '@angular/common';
+
+
 @Component({
   selector: 'app-inicio',
   imports: [CargarCrearComponent, CargarComponent, CrearComponent, CommonModule],

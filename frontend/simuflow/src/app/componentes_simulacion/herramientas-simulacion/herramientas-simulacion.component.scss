@@ -1,0 +1,27 @@
+:host{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+// quizá habrá que cambiar el box-sizing a 
+// box-sizing: content-box para que el circulo
+// que tienen alrededor cuando están seleccionado
+// se coma el padding que tiene por defecto el 
+// article donde están las imagenes sin que pase nada
+    box-sizing: border-box;
+    margin: 0 1rem;
+}
+
+img{
+    width: 25px;
+    cursor: pointer;
+}
+
+.reloj{
+    width: 33px;
+}
+
+.rotar{
+    transform: rotate(180deg);
+}
