@@ -13,7 +13,7 @@
         </button>
     </article>
     <article>
-        <app-herramientas-edicion *ngIf="modoActivo === 'edicion'"></app-herramientas-edicion>
+        <app-herramientas-edicion (herramientaSimulador)="cambioLogica($event)" *ngIf="modoActivo === 'edicion'"></app-herramientas-edicion>
         <app-herramientas-simulacion *ngIf="modoActivo === 'simulacion'"></app-herramientas-simulacion>
     </article>
 </section>

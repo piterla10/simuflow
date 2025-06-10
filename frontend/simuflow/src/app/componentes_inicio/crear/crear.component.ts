@@ -23,8 +23,8 @@ export class CrearComponent implements OnInit{
   ngOnInit(): void {
     this.form = new FormGroup({
       nombre: new FormControl('', Validators.required),
-      ancho: new FormControl('', Validators.required),
-      alto: new FormControl('', Validators.required),
+      filas: new FormControl('', Validators.required),
+      columnas: new FormControl('', Validators.required),
     });
   }
 

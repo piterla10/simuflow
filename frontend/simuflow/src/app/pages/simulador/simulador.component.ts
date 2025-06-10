@@ -41,8 +41,8 @@ export class SimuladorComponent implements OnInit {
     this.archivo = this.inicioService.getArchivo();
 
     if(this.datos){
-      this.filas = this.datos.ancho;
-      this.columnas = this.datos.alto;
+      this.filas = this.datos.filas;
+      this.columnas = this.datos.columnas;
     }
     
     console.log(this.datos);
@@ -64,6 +64,10 @@ export class SimuladorComponent implements OnInit {
   // Función para cambiar de modo
   setModo(modo: 'edicion' | 'simulacion'): void {
     this.modoActivo = modo;
+  }
+
+  cambioLogica(herramienta: string){
+    console.log(herramienta);
   }
 
   // función para guardar los datos en ls bd

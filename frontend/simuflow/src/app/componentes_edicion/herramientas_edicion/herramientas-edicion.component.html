@@ -1,6 +1,10 @@
-<img src="assets/cursor.png" alt="cursor">
-<img src="assets/movimiento.png" alt="movimiento">
-<img src="assets/lapiz.png" alt="lapiz">
-<img src="assets/borrador.png" alt="borrador">
+<img src="assets/cursor.png" alt="cursor" (click)="setHerramienta('seleccionar')" 
+    [class.activo]="herramientaActiva === 'seleccionar'">
+<img src="assets/movimiento.png" alt="movimiento" (click)="setHerramienta('mover')" 
+    [class.activo]="herramientaActiva === 'mover'">
+<img src="assets/lapiz.png" alt="lapiz" (click)="setHerramienta('lapiz')" 
+    [class.activo]="herramientaActiva === 'lapiz'" [class.lapiz]="herramientaActiva === 'lapiz'">
+<img src="assets/borrador.png" alt="borrador" (click)="setHerramienta('borrador')" 
+    [class.activo]="herramientaActiva === 'borrador'">
 <img src="assets/basura.png" alt="basura">
 <img src="assets/controlador.png" alt="controlador">

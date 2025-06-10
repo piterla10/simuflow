@@ -1,14 +1,14 @@
 .recuadro{
-    width: 400px;
-    min-height: 250px;
-    display: flex;
-    align-items: center;
-    flex-direction: column;
-    text-align: center;
-    justify-content: center;
-    background-color: var(--color-azul);
-    padding: 1rem;
-    border: 1px solid var(--blanco1);
+  width: 400px;
+  min-height: 250px;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  text-align: center;
+  justify-content: center;
+  background-color: var(--color-azul);
+  padding: 1rem;
+  border: 1px solid var(--blanco1);
 }
 
 button{
@@ -58,14 +58,14 @@ fieldset{
 }
 
 .tamanyo{
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 1.2rem;
 }
 
 .tamanyo input{
-    width: 70px;
+    width: 90px;
 }
 
 .botones{
