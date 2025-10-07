@@ -1,11 +1,8 @@
 .modal-overlay {
   position: absolute;
-  top: 40px;
+  top: 35px;
   left: 2vw;
   z-index: 15;
-  display: flex;
-  align-items: center;
-  flex-direction: column;
   text-align: center;
   border: solid var(--blanco1) 1px;
   width: 200px;
@@ -64,5 +61,4 @@ img{
 img:hover{
   background-color: var(--color-azul2);
   box-shadow: 0 0.1rem 0.4rem var(--color-fondo);
-
 }

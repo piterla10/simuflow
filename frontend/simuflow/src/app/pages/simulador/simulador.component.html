@@ -13,10 +13,16 @@
         </button>
     </article>
     <article>
-        <app-herramientas-edicion (herramientaSimulador)="cambioLogica($event)" *ngIf="modoActivo === 'edicion'"></app-herramientas-edicion>
+        <app-herramientas-edicion (herramientaSimulador)="cambioHerramienta($event)" *ngIf="modoActivo === 'edicion'"></app-herramientas-edicion>
         <app-herramientas-simulacion *ngIf="modoActivo === 'simulacion'"></app-herramientas-simulacion>
     </article>
 </section>
+<!-- sección de modales que pueden aparecer dependiendo de donde cliquemos -->
+
+<app-crear-elemento #elemento (elemento)="cambioElemento($event)"></app-crear-elemento>
+<app-elemento-detalles #elementoDetalles ></app-elemento-detalles>
+
+<!-- grid de trabajo -->
 <section class="grid-container">
     <article class="grid"
     [style.--cols]="columnas"
@@ -24,8 +30,11 @@
         <div class="cell"
         *ngFor="let cell of flatGrid"
         [class.selected]="celdaSeleccionada === cell"
-        (click)="onCellClick(cell)">
-        {{ cell.content?.type || '' }}
+        (click)="controladorCanvas(cell)">
+            <div *ngIf="cell.content">
+                <img [src]="cell.content.imagen" [alt]="cell.content.tipo">
+                <p>{{infoElemento(cell.content)}}</p>
+            </div>
         </div>
     </article>
 </section>

@@ -11,6 +11,8 @@ img{
   // esto funciona rarete por utilizar absolute en img lo que hace que se salga del
   // flexbox del padre y no se pueda colocar bien utilizando top, pero de esta forma
   // se ve bien igualmente
+
+  // no se ve bien al final, va a haber que cambiarlo
   bottom: 900px; 
   width: 300px;
 }

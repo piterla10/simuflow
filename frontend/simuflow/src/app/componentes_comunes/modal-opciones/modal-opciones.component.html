@@ -1,6 +1,6 @@
 
-<div class="modal-overlay" *ngIf="visible" (click)="cerrarModal()">
-  <div class="modal-content" (click)="$event.stopPropagation()">
+<div class="modal-overlay" *ngIf="visible">
+  <div class="modal-content">
     <button type="button" class="boton" (click)="cerrarModal()"><img src="assets/x_blanca.png" alt="Cerrar"></button>
     <h3>Opciones de simulación</h3>
     <button type="button" (click)="guardarSimulacion()">Guardar</button>

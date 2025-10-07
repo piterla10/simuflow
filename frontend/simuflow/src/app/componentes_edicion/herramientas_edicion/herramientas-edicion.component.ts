@@ -1,4 +1,5 @@
 import { Component, EventEmitter, Output, output } from '@angular/core';
+import { Herramienta } from '../../services/Herramienta';
 
 @Component({
   selector: 'app-herramientas-edicion',
@@ -7,18 +8,21 @@ import { Component, EventEmitter, Output, output } from '@angular/core';
   styleUrl: './herramientas-edicion.component.scss'
 })
 export class HerramientasEdicionComponent {
-  @Output() herramientaSimulador = new EventEmitter<string>();
+  @Output() herramientaSimulador = new EventEmitter<Herramienta>();
   // para el cambiar las herramientas seleccionadas
-  public herramientaActiva: 'seleccionar' | 'mover' | 'lapiz' | 'borrador' = 'seleccionar';
+  public herramientaActiva: Herramienta = 'seleccionar';
 
   // seleccionamos la herramienta para darle el css
-  setHerramienta(herramienta: 'seleccionar' | 'mover' | 'lapiz' | 'borrador' = 'seleccionar'){
-    this.herramientaActiva = herramienta;
-    this.mandarHerramienta();
+  setHerramienta(herramienta: Herramienta){
+    //esto del agente es para controlar los modales
+    if(herramienta != 'agente' && herramienta != 'basura'){
+      this.herramientaActiva = herramienta;
+    }
+    this.mandarHerramienta(herramienta);
   }
 
   // mandamos la herramienta al padre para que cambie de logica al clicar
-  mandarHerramienta(){
-    this.herramientaSimulador.emit(this.herramientaActiva);
+  mandarHerramienta(herramienta: Herramienta){
+    this.herramientaSimulador.emit(herramienta);
   }
 }
