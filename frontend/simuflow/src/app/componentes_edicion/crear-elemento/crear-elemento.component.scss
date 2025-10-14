@@ -46,7 +46,6 @@
 .imagenes{
   display: grid;
   grid-template-columns: repeat(2, 1fr); /* 2 columnas de igual ancho */
-  
 }
 
 .imagenes article{
@@ -55,7 +54,6 @@
     align-items: center;
     cursor: pointer;
 }
-
 
 .imagenes article:not(.activo):hover{
     background-color: var(--color-azul2);

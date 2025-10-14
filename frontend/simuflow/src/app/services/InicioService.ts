@@ -12,7 +12,6 @@ export class InicioService {
   }
 
   getArchivo(): File | null {
-    console.log(this.archivo)
     return this.archivo;
   }
 

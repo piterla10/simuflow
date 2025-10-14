@@ -24,14 +24,12 @@
 
 <!-- grid de trabajo -->
 <section class="grid-container">
-    <article class="grid"
-    [style.--cols]="columnas"
-    [style.--rows]="filas">
+    <article class="grid" [style.--cols]="columnas" [style.--rows]="filas">
         <div class="cell"
         *ngFor="let cell of flatGrid"
         [class.selected]="celdaSeleccionada === cell"
         (click)="controladorCanvas(cell)">
-            <div *ngIf="cell.content">
+            <div *ngIf="cell.content" class="cell-content">
                 <img [src]="cell.content.imagen" [alt]="cell.content.tipo">
                 <p>{{infoElemento(cell.content)}}</p>
             </div>

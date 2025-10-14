@@ -20,12 +20,15 @@ import { ElementoDetallesComponent } from "../../componentes_edicion/elemento-de
 })
 export class SimuladorComponent implements OnInit {
   // para utilizar las funciones de abrir y cerrar modal 
-  @ViewChild('elemento') modalCrearelemento!: CrearElementoComponent;
+  @ViewChild('elemento') modalCrearElemento!: CrearElementoComponent;
 
   constructor(private inicioService: InicioService, 
     private simulacionService: SimulacionService){}
   
-  // Para llamar al servicio que guardará en la bd
+  // Esta variable es para guardar la suscripción del observable que
+  // se utiliza para guardar los datos del grid y tal. Se podría
+  // hacer sin variable pero al utilizarla luego se puede destruir
+  // en ngOnDestroy y se evitan fugas de memoria.
   private saveSubscription!: Subscription;
 
   // para el manejo del Grid
@@ -34,12 +37,13 @@ export class SimuladorComponent implements OnInit {
   public columnas!: number;
   public flatGrid: Cell[] = [];
   public celdaSeleccionada: Cell | null = null;
+  private idElemento: number = 0;
   
   // datos que recibimos de inicio
   private datos: any;
   private archivo: File | null = null;
 
-  // para el cambiar las herramientas seleccionadas
+  // para cambiar las herramientas seleccionadas
   public modoActivo: 'edicion' | 'simulacion' = 'edicion';
   public herramientaEdicion: Herramienta = 'seleccionar'
   public elemento: Elemento = 'generador';
@@ -63,6 +67,8 @@ export class SimuladorComponent implements OnInit {
     // Creamos el grid 
     this.createGrid();
 
+    // guardamos la suscripción en la variable y le asignamos que llame a 
+    // guardarDatosSimulación() cuando se haga .next() en el service
     this.saveSubscription = this.simulacionService.saveRequested$.subscribe(() => {
       this.guardarDatosSimulacion();
     });
@@ -78,17 +84,17 @@ export class SimuladorComponent implements OnInit {
     this.modoActivo = modo;
     if(modo === 'simulacion'){
       this.celdaSeleccionada = null;
-    }
-    // cerramos el modal del lapiz en caso de que estuviera abierto 
-    if(this.modalCrearelemento.visible){
-      this.modalCrearelemento.cerrarModal();
+
+      // cerramos el modal del lapiz en caso de que estuviera abierto 
+      if(this.modalCrearElemento.visible){
+        this.modalCrearElemento.cerrarModal();
+      }
     }
   }
 
   // función para seleccionar el elemento a poner en el canvas
   cambioElemento(elemento: Elemento){
     this.elemento = elemento;
-    console.log(elemento)
   }
 
   // para que el clicar en una herramienta haga que el modo edición se 
@@ -104,7 +110,7 @@ export class SimuladorComponent implements OnInit {
         this.herramientaEdicion = herramienta;
         break;
       case 'lapiz':
-        if(this.modalCrearelemento.visible){
+        if(this.modalCrearElemento.visible){
           this.cerrarModales('elementoHijo');
         }else{
           this.abrirModales('elementoHijo');
@@ -136,13 +142,15 @@ export class SimuladorComponent implements OnInit {
 
   // Controladores para abrir y cerrar modales
   abrirModales(nombreModal: string){
+    // si ya hay un modal activo y es distinto del nuevo por abrir 
+    // se cierra el activo y luego se abre el nuevo
     if (this.modalActual && this.modalActual !== nombreModal) {
       this.cerrarModales(this.modalActual);
     }
 
     switch(nombreModal){
       case 'elementoHijo':
-        this.modalCrearelemento.abrirModal();
+        this.modalCrearElemento.abrirModal();
         break;
       case '':
         
@@ -154,13 +162,13 @@ export class SimuladorComponent implements OnInit {
   cerrarModales(nombreModal: string){
     switch(nombreModal){
       case 'elementoHijo':
-        this.modalCrearelemento.cerrarModal();  
+        this.modalCrearElemento.cerrarModal();  
         break;
       case 'otroModal':
 
         break;
       case '':
-        this.modalCrearelemento.cerrarModal();
+        this.modalCrearElemento.cerrarModal();
         break;
     }
     if(this.modalActual === nombreModal){
@@ -222,6 +230,10 @@ export class SimuladorComponent implements OnInit {
     }
   }
 
+  private generarId(): number{
+    return this.idElemento++;
+  }
+
   // para crear elementos en el sistema
   lapiz(cell:Cell){
     if(!cell.content){
@@ -232,39 +244,47 @@ export class SimuladorComponent implements OnInit {
       switch(this.elemento){
       case 'consumo':
         contenido = {
-            tipo: 'generador', // no se si hará falta poner esto
-            imagen: 'assets/elementos/desaladora_blanca.png',
+            id: this.generarId(),
+            tipo: 'consumo',
+            imagen: 'assets/elementos/consumo_blanco.png',
             datosSimulacion: [0],
-            peligro: null
+            // peligro: null
           };
-          
         break;
       case 'deposito':
         contenido = {
-            tipo: 'generador', // no se si hará falta poner esto
-            imagen: 'assets/elementos/desaladora_blanca.png',
+            id: this.generarId(),
+            tipo: 'deposito', 
+            altura: 1,
+            capacidad: 5,
+            contenidoActual: 2.5,
+            imagen: 'assets/elementos/deposito_blanco_4.png',
             datosSimulacion: [0],
             peligro: null
           };
         break;
       case 'generador':
           contenido = {
-            tipo: 'generador', // no se si hará falta poner esto
+            id: this.generarId(),
+            tipo: 'generador',
             imagen: 'assets/elementos/desaladora_blanca.png',
             datosSimulacion: [0],
-            peligro: null
+            // peligro: null
           };
-
         break;
       case 'tuberia':
         contenido = {
-            tipo: 'generador', // no se si hará falta poner esto
-            imagen: 'assets/elementos/desaladora_blanca.png',
-            datosSimulacion: [0],
+            id: this.generarId(),
+            tipo: 'tuberia',
+            presionMax: 10,
+            presionActual: 5,
+            imagen: 'assets/elementos/tuberia_blanca.png',
             peligro: null
           };
         break;
       }
+      // esto funcionaría para todo menos las tuberías, habrá que tenerlo en cuenta
+      
       celdaGrid!.content = contenido;
     }
   }
@@ -285,7 +305,7 @@ export class SimuladorComponent implements OnInit {
     }
   }
 
-  // función para guardar los datos en ls bd
+  // función para guardar los datos en la bd
   guardarDatosSimulacion() {
     // Aquí iría la llamada al servicio para guardar en BD
     // this.simulationService.guardarEnBD(datosParaGuardar);
@@ -293,7 +313,6 @@ export class SimuladorComponent implements OnInit {
 
   // para crear el grid
   createGrid(): void {
-    this.flatGrid = [];
     for (let i = 0; i < this.filas; i++) {
       for (let j = 0; j < this.columnas; j++) {
         const cell = { fila: i, columna: j, content: null };
