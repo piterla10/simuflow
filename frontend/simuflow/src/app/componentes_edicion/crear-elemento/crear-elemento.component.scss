@@ -4,9 +4,6 @@
   left: 50%;
   transform: translate(-50%, -50%); /* Ajuste fino para centrar */
   z-index: 15;
-  display: flex;
-  justify-content: center; /* Centra horizontalmente */
-  align-items: center;
   border: solid var(--blanco1) 1px;
   width: 400px;
 }
@@ -64,12 +61,12 @@
     background-color: var(--color-azul2);
     box-shadow: 0 0.1rem 0.4rem var(--color-fondo);
     border: 1px solid var(--blanco1);
-    cursor: default;
 }
 
 .imagenes img{
     width: 100%;
     max-width: 192px;
+    pointer-events: none;
 }
 
 .imagenes p{

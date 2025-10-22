@@ -1,6 +1,6 @@
 import { Component, Input, OnInit, viewChild, ViewChild } from '@angular/core';
 import { NavbarComponent } from "../../componentes_comunes/navbar/navbar.component";
-import { InicioService } from '../../services/InicioService';
+import { ArchivoService } from '../../services/ArchivoService';
 import { Cell, CellElement } from '../../services/Cell';
 import { CommonModule } from '@angular/common';
 import { SimulacionService } from '../../services/SimulacionService';
@@ -11,18 +11,22 @@ import { Herramienta } from '../../services/Herramienta';
 import { Elemento } from '../../services/Elemento';
 import { CrearElementoComponent } from "../../componentes_edicion/crear-elemento/crear-elemento.component";
 import { ElementoDetallesComponent } from "../../componentes_edicion/elemento-detalles/elemento-detalles.component";
+import { BasuraComponent } from '../../componentes_edicion/basura/basura.component';
+import { ControladoresComponent } from '../../componentes_edicion/controladores/controladores.component';
 
 @Component({
   selector: 'app-simulador',
-  imports: [NavbarComponent, CommonModule, HerramientasEdicionComponent, HerramientasSimulacionComponent, CrearElementoComponent, ElementoDetallesComponent],
+  imports: [NavbarComponent, CommonModule, HerramientasEdicionComponent, HerramientasSimulacionComponent, CrearElementoComponent, ElementoDetallesComponent, BasuraComponent, ControladoresComponent],
   templateUrl: './simulador.component.html',
   styleUrl: './simulador.component.scss'
 })
 export class SimuladorComponent implements OnInit {
   // para utilizar las funciones de abrir y cerrar modal 
   @ViewChild('elemento') modalCrearElemento!: CrearElementoComponent;
+  @ViewChild('basura') modalBasura!: BasuraComponent;
+  @ViewChild('elementoDetalles') modalElementoDetalles!: ElementoDetallesComponent;
 
-  constructor(private inicioService: InicioService, 
+  constructor(private archivoService: ArchivoService, 
     private simulacionService: SimulacionService){}
   
   // Esta variable es para guardar la suscripción del observable que
@@ -41,7 +45,8 @@ export class SimuladorComponent implements OnInit {
   
   // datos que recibimos de inicio
   private datos: any;
-  private archivo: File | null = null;
+      // esto ya se usará cuanto toque ponerse con lo de guardar el archivo en una bd
+  private archivo: File | null = null; 
 
   // para cambiar las herramientas seleccionadas
   public modoActivo: 'edicion' | 'simulacion' = 'edicion';
@@ -52,20 +57,30 @@ export class SimuladorComponent implements OnInit {
   private modalActual: string | null = null;
 
   ngOnInit(){
-    // guardamos los datos del sistema
-    this.datos = this.inicioService.getDatos();
-    this.archivo = this.inicioService.getArchivo();
 
-    if(this.datos){
+    // Habrá que hacer que se guarde también la variable flatGrid en localhost para
+    // que al recuperar el sistema no solo se coloquen las celdas sino también los elementos con las 
+    // disposiciones que tenían previamente y tal
+
+    // guardamos los datos del sistema
+    const datosJSON = localStorage.getItem('datosGrid');
+    this.archivo = this.archivoService.getArchivo();
+
+    if(datosJSON){
+      this.datos = JSON.parse(datosJSON);
       this.filas = this.datos.filas;
       this.columnas = this.datos.columnas;
     }
-    
-    console.log(this.datos);
-    console.log(this.archivo);
 
-    // Creamos el grid 
-    this.createGrid();
+    const flatGridJSON = localStorage.getItem('flatGrid');
+    if (flatGridJSON) {
+      // hacemos que se cree el proxy de flatGrid para que se guarde automáticamente
+      this.flatGrid = JSON.parse(flatGridJSON);
+    } else {
+      this.createGrid();
+      // guardo por primera vez en localStorage
+      localStorage.setItem('flatGrid', JSON.stringify(this.flatGrid));
+    }
 
     // guardamos la suscripción en la variable y le asignamos que llame a 
     // guardarDatosSimulación() cuando se haga .next() en el service
@@ -79,81 +94,77 @@ export class SimuladorComponent implements OnInit {
     this.saveSubscription.unsubscribe();
   }
 
+  // --------------------------------------- SELECCIÓN DE MODO Y CAMBIO DE HERRAMIENTA ---------------------------------------
+
   // Función para cambiar de modo
   setModo(modo: 'edicion' | 'simulacion'){
     this.modoActivo = modo;
     if(modo === 'simulacion'){
       this.celdaSeleccionada = null;
 
-      // cerramos el modal del lapiz en caso de que estuviera abierto 
-      if(this.modalCrearElemento.visible){
-        this.modalCrearElemento.cerrarModal();
+      // cerramos los modales que pudieran estar abiertos
+      if(this.modalActual){
+        this.cerrarModales(this.modalActual);
       }
     }
-  }
-
-  // función para seleccionar el elemento a poner en el canvas
-  cambioElemento(elemento: Elemento){
-    this.elemento = elemento;
+    if(modo === 'edicion'){
+      this.herramientaEdicion = 'seleccionar';
+    }
   }
 
   // para que el clicar en una herramienta haga que el modo edición se 
   // comporte de una forma u otra
   cambioHerramienta(herramienta: Herramienta){
+    // cerramos el modal que pueda estar abierto cuando se cambie de herramienta
+    if(this.modalActual){
+      this.cerrarModales(this.modalActual);
+    }
+    // si celdaSeleccionada tiene contenido la ponemos a null
+    this.celdaSeleccionada && (this.celdaSeleccionada = null);
+
     switch(herramienta){
       case 'seleccionar':
-        this.cerrarModales('');
         this.herramientaEdicion = herramienta;
         break;
       case 'mover':
-        this.cerrarModales('');
         this.herramientaEdicion = herramienta;
         break;
       case 'lapiz':
-        if(this.modalCrearElemento.visible){
-          this.cerrarModales('elementoHijo');
-        }else{
-          this.abrirModales('elementoHijo');
-        }
+        this.abrirModales('crearElemento');
         this.herramientaEdicion = herramienta;
         break;
       case 'borrador':
-        this.cerrarModales('');
         this.herramientaEdicion = herramienta;
         break;
       case 'basura':
-        // habrá que hacer esto pero con los modales de la basura
-        // if(this.elementoHijo.visible){
-        //   this.cerrarModales('elementoHijo');
-        // }else{
-        //   this.abrirModales('elementoHijo');
-        // }
+        this.abrirModales('basura');
         break;
       case 'agente':
         // habrá que hacer esto pero con los modales del agente
-        // if(this.elementoHijo.visible){
-        //   this.cerrarModales('elementoHijo');
+        // if(this.crearElemento.visible){
+        //   this.cerrarModales('crearElemento');
         // }else{
-        //   this.abrirModales('elementoHijo');
+        //   this.abrirModales('crearElemento');
         // }
         break;
     }
   }
 
-  // Controladores para abrir y cerrar modales
-  abrirModales(nombreModal: string){
-    // si ya hay un modal activo y es distinto del nuevo por abrir 
-    // se cierra el activo y luego se abre el nuevo
-    if (this.modalActual && this.modalActual !== nombreModal) {
-      this.cerrarModales(this.modalActual);
-    }
+  // --------------------------------------- CONTROLADORES PARA ABRIR Y CERRAR MODALES ---------------------------------------
 
+  // no es perfecto porque si por ejemplo un modal se cierra desde la x, la variable modalActual 
+  // no se habrá actualizado pero aun así funcionaría ya que al abrir otro modal, se intentaría 
+  // volver a cerrar el que ya estaba cerrado y se abriría el nuevo
+  abrirModales(nombreModal: string){
     switch(nombreModal){
-      case 'elementoHijo':
+      case 'crearElemento':
         this.modalCrearElemento.abrirModal();
         break;
-      case '':
-        
+      case 'basura':
+        this.modalBasura.abrirModal();
+        break;
+      case 'elementoDetalles':
+        this.modalElementoDetalles.abrirModal();
         break;
     }
     this.modalActual = nombreModal;
@@ -161,20 +172,26 @@ export class SimuladorComponent implements OnInit {
 
   cerrarModales(nombreModal: string){
     switch(nombreModal){
-      case 'elementoHijo':
+      case 'crearElemento':
         this.modalCrearElemento.cerrarModal();  
         break;
-      case 'otroModal':
-
+      case 'basura':
+        this.modalBasura.cerrarModal();
+        break;
+      case 'elementoDetalles':
+        this.modalElementoDetalles.cerrarModal();
         break;
       case '':
+        // este caso es para cerrar todos los modales que puedan estar abiertos
         this.modalCrearElemento.cerrarModal();
+        this.modalBasura.cerrarModal();
+        this.modalElementoDetalles.cerrarModal();
         break;
     }
-    if(this.modalActual === nombreModal){
       this.modalActual = null;
-    }
   }
+
+// --------------------------------------- GESTIÓN DEL CLICK EN EL CANVAS Y LAS FUNCIONES DE LAS HERRAMIENTAS ---------------------------------------
 
   // Controlador del comportamiento de los clicks en el canvas según 
   // la herramienta seleccionada
@@ -182,17 +199,16 @@ export class SimuladorComponent implements OnInit {
     if(this.modoActivo === 'edicion'){
       switch(this.herramientaEdicion){
         case 'seleccionar':
-
+          this.seleccionar(cell);
           break;
         case 'mover':
-
           this.mover(cell);
           break;
         case 'lapiz':
           this.lapiz(cell);
           break;
         case 'borrador':
-
+          this.borrador(cell);
           break;
       }
     }else{
@@ -204,9 +220,18 @@ export class SimuladorComponent implements OnInit {
 
   // para ver el contenido de una celda
   seleccionar(cell: Cell){
-    // Si clicamos en una celda vacía se pone celdaSeleccionada a null
-    // y cerramos el modal que pueda estar abierto de detalles del contenido
-    // si la celda clicada tiene contenido entonces abrimos el modal y lo enseñamos
+    if(this.celdaSeleccionada === cell){
+      //desde aquí se cierra el modal
+      this.cerrarModales('elementoDetalles')
+      this.celdaSeleccionada = null;
+    }else if(cell.content){
+      this.celdaSeleccionada = cell;
+      this.abrirModales('elementoDetalles');
+    }
+    
+    // guardamos en localstorage
+    this.guardarGrid();
+
   }
 
   // para mover el contenido de una celda a otra
@@ -223,15 +248,29 @@ export class SimuladorComponent implements OnInit {
     } else if (!this.celdaSeleccionada && cell.content) {
       this.celdaSeleccionada = cell;
 
+      // si tenemos una seleccionada y la queremos cambiar por otra con contenido
+    } else if(this.celdaSeleccionada && cell.content && this.celdaSeleccionada !== cell){
+      const aux = this.celdaSeleccionada.content;
+      this.celdaSeleccionada.content = cell.content;
+      cell.content = aux;
+      this.celdaSeleccionada = null;
+
       // si la celda que hemos seleccionado es la misma que teníamos ya seleccionada
       // ponemos la celda seleccionada a null
     } else if(this.celdaSeleccionada == cell){
       this.celdaSeleccionada = null;
     }
+    // guardamos en localstorage
+    this.guardarGrid();
   }
 
   private generarId(): number{
     return this.idElemento++;
+  }
+
+  // función para seleccionar el elemento a poner en el canvas
+  cambioElemento(elemento: Elemento){
+    this.elemento = elemento;
   }
 
   // para crear elementos en el sistema
@@ -267,7 +306,7 @@ export class SimuladorComponent implements OnInit {
           contenido = {
             id: this.generarId(),
             tipo: 'generador',
-            imagen: 'assets/elementos/desaladora_blanca.png',
+            imagen: 'assets/elementos/desaladora_blanco.png',
             datosSimulacion: [0],
             // peligro: null
           };
@@ -278,7 +317,7 @@ export class SimuladorComponent implements OnInit {
             tipo: 'tuberia',
             presionMax: 10,
             presionActual: 5,
-            imagen: 'assets/elementos/tuberia_blanca.png',
+            imagen: 'assets/elementos/tuberia_blanco.png',
             peligro: null
           };
         break;
@@ -286,7 +325,27 @@ export class SimuladorComponent implements OnInit {
       // esto funcionaría para todo menos las tuberías, habrá que tenerlo en cuenta
       
       celdaGrid!.content = contenido;
+      // guardamos en localstorage
+      this.guardarGrid();
     }
+  }
+
+  // funcion del borrador de eliminar el contenido de una celda
+  borrador(cell:Cell){
+    cell.content = null;
+    // guardamos en localstorage
+    this.guardarGrid();
+  }
+
+  // función de la basura para eliminar todo el contenido 
+  confirmarBorrado(){
+    // recorrer el array de this.flatGrid y vaciarlo entero
+    // en un futuro habrá que también borrar los agentes controladores
+    for (let i = 0; i < this.flatGrid.length; i++) {
+      this.flatGrid[i].content = null;
+    }
+    // guardamos en localstorage
+    this.guardarGrid();
   }
 
   infoElemento(elemento: CellElement): string{
@@ -300,11 +359,10 @@ export class SimuladorComponent implements OnInit {
           return `${elemento.datosSimulacion.join(', ')}`;
       case 'tuberia':
           return `${elemento.presionActual}`;
-      default:
-          return '';
     }
   }
 
+// --------------------------------------- CREACIÓN DEL GRID Y MANEJO DEL GUARDADO Y CARGA DE DATOS ---------------------------------------
   // función para guardar los datos en la bd
   guardarDatosSimulacion() {
     // Aquí iría la llamada al servicio para guardar en BD
@@ -320,4 +378,12 @@ export class SimuladorComponent implements OnInit {
       }
     }
   }
+
+// -------------------------------- FUNCION PARA EL GUARDADO EN LOCALSTORAGE  ----------------------------
+
+  guardarGrid(){
+    localStorage.setItem('flatGrid', JSON.stringify(this.flatGrid));
+  }
+
 }
+

@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Output } from '@angular/core';
-import { InicioService } from '../../services/InicioService';
+import { ArchivoService } from '../../services/ArchivoService';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 
@@ -10,7 +10,7 @@ import { FormsModule } from '@angular/forms';
   styleUrl: './cargar.component.scss'
 })
 export class CargarComponent {
-  constructor(private inicioService: InicioService, private router: Router  ) {}
+  constructor(private archivoService: ArchivoService, private router: Router  ) {}
   @Output() cambiar = new EventEmitter<number>();
 
   archivoSeleccionado: File | null = null;
@@ -24,7 +24,7 @@ export class CargarComponent {
   enviarFormulario(event: Event) {
     event.preventDefault();
     if (this.archivoSeleccionado) {
-      this.inicioService.setArchivo(this.archivoSeleccionado);
+      this.archivoService.setArchivo(this.archivoSeleccionado);
       this.router.navigate(['/simulador']);
     }
   }

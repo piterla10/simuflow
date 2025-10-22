@@ -25,12 +25,13 @@ export class CrearElementoComponent {
   setElemento(elemento: Elemento){
     if(elemento !== this.elementoSeleccionado){
       this.elementoSeleccionado = elemento;
-      this.cambiarElemento(elemento);
     }
+    this.cambiarElemento(elemento);
   }
 
   // función para mandarle el nuevo elemento seleccionado al simulador
   cambiarElemento(elemento: Elemento) {
     this.elemento.emit(elemento);
+    this.visible = false;
   }
 }

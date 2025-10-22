@@ -2,8 +2,7 @@ import { Injectable } from "@angular/core";
 
 @Injectable({providedIn:'root'})
 
-export class InicioService {
-  private datosFormulario: any;
+export class ArchivoService {
   private archivo: File | null = null;
 
   setArchivo(file: File) {
@@ -13,13 +12,5 @@ export class InicioService {
 
   getArchivo(): File | null {
     return this.archivo;
-  }
-
-  setDatos(datos: any) {
-    this.datosFormulario = datos;
-  }
-
-  getDatos() {
-    return this.datosFormulario;
   }
 }

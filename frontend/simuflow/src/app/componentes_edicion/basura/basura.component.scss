@@ -1,13 +1,3 @@
-// Para quitar los spinners que aparecen en los input de tipo number
-input[type=number]::-webkit-inner-spin-button,
-input[type=number]::-webkit-outer-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
-input[type=number] {
-  -moz-appearance: textfield;
-}
-
 .modal-overlay {
   position: fixed;
   top: 50%;
@@ -43,6 +33,7 @@ input[type=number] {
   background-color: var(--color-fondo);
   border-radius: 50%;
   border: 1px solid var(--blanco1);
+  cursor: pointer;
 }
 
 .botonCerrar:hover{
@@ -50,53 +41,25 @@ input[type=number] {
   box-shadow: 0 0.1rem 0.4rem var(--color-fondo);
 }
 
-article{
-  padding: 10px;
-}
-span{
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.4rem;
-  margin-bottom: 1.3rem;
-}
-
-section article h3{
-  font-size: 1.3rem;
+h3{
   margin: 0;
+  text-align: center;
+  font-size: 1.3rem;
+  padding: 1rem;
   cursor: default;
 }
 
-.bloque{
-  display: flex;
-  gap: 0.5rem;
-  justify-content: center;
-}
-
-.colores{
-  width: 35px;
-  height: 35px;
+.confirmar{
+  color: var(--blanco1);
+  background-color: var(--rojo);
   border: 1px solid var(--blanco1);
+  padding: 0.6rem;
+  font-size: 1.3rem;
   cursor: pointer;
 }
 
-.colores:not(.activo):hover{
-  transition: box-shadow 0.3s ease;
+.confirmar:hover{
+  transition: color 0.3s ease, box-shadow 0.3s ease;
+  color: var(--amarillo);
   box-shadow: 0 0.1rem 0.4rem var(--color-fondo);
-}
-
-.colores.activo{
-  box-shadow: 0 0.2rem 0.6rem var(--color-fondo);
-  border: 1px solid var(--rojo);
-  cursor: default;
-}
-
-.datosSim{
-  font-size: 1.3rem;
-  width: 85%;
-  text-align: center;
-  color: var(--color-fondo);
-  background-color: var(--blanco1);
-  border: 1px solid white;
-  padding: 3px 0;
 }

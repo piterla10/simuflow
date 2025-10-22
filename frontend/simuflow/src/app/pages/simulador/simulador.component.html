@@ -20,7 +20,9 @@
 <!-- sección de modales que pueden aparecer dependiendo de donde cliquemos -->
 
 <app-crear-elemento #elemento (elemento)="cambioElemento($event)"></app-crear-elemento>
-<app-elemento-detalles #elementoDetalles ></app-elemento-detalles>
+<app-elemento-detalles #elementoDetalles [celda]="celdaSeleccionada!" (actualizar)="seleccionar($event)"></app-elemento-detalles>
+<app-basura #basura (borrar)="confirmarBorrado()"></app-basura>
+<app-controladores #agentes></app-controladores>
 
 <!-- grid de trabajo -->
 <section class="grid-container">

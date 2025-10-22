@@ -1,5 +1,85 @@
 <div class="modal-overlay" *ngIf="visible">
   <div class="modal-content">
-    <button type="button" class="boton" (click)="cerrarModal()"><img class="botonCerrar" src="assets/x_blanca.png" alt="Cerrar"></button>
+    <button type="button" class="boton" (click)="cerrarDesdeBoton()"><img class="botonCerrar" src="assets/x_blanca.png" alt="Cerrar"></button>
+    <section [ngSwitch]="celda.content?.tipo">
+      <article *ngSwitchCase="'generador'">
+        <span>
+          <h3>Color del generador</h3>
+          <div class="bloque">
+            <div
+              class="colores"
+              *ngFor="let c of colores"
+              [ngStyle]="{ 'background-color': c.color }"
+              [class.activo]="colorCelda === c.id"
+              (click)="colorSeleccionado(c.id)"
+            ></div>
+          </div>
+        </span>
+        <span>
+          <h3>Datos de la simulación</h3>
+          <!-- El ngModel hace binding bidireccional entre el texto del input y la variable datosSim, cuando una cambie, cambiará la otra -->
+          <input class="datosSim" type="text" [(ngModel)]="datosSim" (input)="procesar()" placeholder="Ej: 3, 5, 10">
+        </span> 
+      </article>
+      <article *ngSwitchCase="'deposito'">
+        <span>
+          <h3>Altura del depósito (m)</h3>
+          <input type="number" class="datosSim" [(ngModel)]="altura" (input)="procesarAltura()">
+        </span>
+        <span>
+          <h3>Capacidad del depósito</h3>
+          <input type="number" class="datosSim" [(ngModel)]="capacidad" (input)="procesarCapacidad()">
+        </span>
+        <span>
+          <h3>Contenido actual</h3>
+          <input type="number" class="datosSim" [(ngModel)]="contenidoActual" (input)="procesarContenido()">
+        </span>
+        <span>
+          <h3>Color del depósito</h3>
+          <div class="bloque">
+            <div
+              class="colores"
+              *ngFor="let c of colores"
+              [ngStyle]="{ 'background-color': c.color }"
+              [class.activo]="colorCelda === c.id"
+              (click)="colorSeleccionado(c.id)"
+            ></div>
+          </div>
+        </span>
+        <span>
+          <h3>Datos de la simulación</h3>
+          <!-- El ngModel hace binding bidireccional entre el texto del input y la variable datosSim, cuando una cambie, cambiará la otra -->
+          <input class="datosSim" type="text" [(ngModel)]="datosSim" (input)="procesar()" placeholder="Ej: 3, 5, 10">
+        </span>
+      </article>
+      <article *ngSwitchCase="'consumo'">
+         <span>
+          <h3>Color del área de consumo</h3>
+          <div class="bloque">
+            <div
+              class="colores"
+              *ngFor="let c of colores"
+              [ngStyle]="{ 'background-color': c.color }"
+              [class.activo]="colorCelda === c.id"
+              (click)="colorSeleccionado(c.id)"
+            ></div>
+          </div>
+        </span>
+        <span>
+          <h3>Datos de la simulación</h3>
+          <!-- El ngModel hace binding bidireccional entre el texto del input y la variable datosSim, cuando una cambie, cambiará la otra -->
+          <input class="datosSim" type="text" [(ngModel)]="datosSim" (input)="procesar()" placeholder="Ej: 3, 5, 10">
+        </span> 
+      </article>
+      <article *ngSwitchCase="'tuberia'">
+        <span>
+          <h3>Presión maxima</h3>
+          <input type="number" class="datosSim">
+        </span>
+      </article>
+    </section>
   </div>
 </div>
+
+
+<!-- se puede utilizar también ngSwitch en angular para que se muestre un tipo de codigo dependiendo de que se haya clicado -->
