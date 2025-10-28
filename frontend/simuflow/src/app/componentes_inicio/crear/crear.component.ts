@@ -30,7 +30,7 @@ export class CrearComponent implements OnInit{
 
   enviarFormulario() {
      if (this.form.valid) {
-      localStorage.setItem('datosGrid', JSON.stringify(this.form.value));
+      localStorage.setItem('infoGrid', JSON.stringify(this.form.value));
       this.router.navigate(['/simulador']);
     }
   }

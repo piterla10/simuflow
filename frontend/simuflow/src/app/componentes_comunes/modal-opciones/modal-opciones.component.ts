@@ -1,5 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Output } from '@angular/core';
+import { Router } from '@angular/router';
+import { SimulacionService } from '../../services/SimulacionService';
 
 @Component({
   selector: 'app-modal-opciones',
@@ -8,9 +10,10 @@ import { Component, EventEmitter, Output } from '@angular/core';
   styleUrl: './modal-opciones.component.scss'
 })
 export class ModalOpcionesComponent {
-  visible = false;
-  @Output() guardar = new EventEmitter<void>();
+  constructor( private router: Router, private simulacionService: SimulacionService) {  }
   @Output() cargar = new EventEmitter<void>();
+  public errorArchivoVacio = false;
+  public visible = false;
 
   abrirModal() {
     this.visible = true;
@@ -21,12 +24,60 @@ export class ModalOpcionesComponent {
   }
 
   guardarSimulacion() {
-    this.guardar.emit();
+    this.simulacionService.guardar();
     this.cerrarModal();
   }
 
-  cargarSimulacion() {
-    this.cargar.emit();
-    this.cerrarModal();
+  cargarSimulacion(event: any) {
+
+    const input = event.target as HTMLInputElement;
+    const archivoSeleccionado = input.files?.[0];
+    if (!archivoSeleccionado) {
+      this.mostrarErrorTemporal();
+      input.value= '';
+      return;
+    }
+
+    const lector = new FileReader();
+
+    lector.onload = (e: ProgressEvent<FileReader>) => {
+      try {
+        const contenido = e.target?.result as string;
+        const datos = JSON.parse(contenido);
+
+        if (!datos.info || !datos.grid) {
+          this.mostrarErrorTemporal();
+          input.value= '';
+          return;
+        }
+
+        this.simulacionService.cargar(datos);
+
+        this.cerrarModal();
+
+        input.value= '';
+      } catch (error) {
+        input.value= '';
+        this.mostrarErrorTemporal();
+      }
+    };
+
+    lector.readAsText(archivoSeleccionado);
+    
   }
+
+  volverInicio(){
+    localStorage.clear();
+    this.cerrarModal();
+    this.router.navigate(['/']);
+  }
+
+  mostrarErrorTemporal() {
+    this.errorArchivoVacio = true;
+
+    setTimeout(() => {
+      this.errorArchivoVacio = false;
+    }, 3000); // coincide con los 3s del fade
+  }
+
 }

@@ -1,10 +1,15 @@
 <article class="recuadro">
     <h2>Selecciona el esquema a simular</h2>
-    <form (ngSubmit)="enviarFormulario($event)">
-        <input type="file" name="archivo" accept=".js" required (change)="guardarArchivo($event)">
+        <input type="file" accept=".json" id="archivoInput" required (change)="cargarArchivo($event)">
+        <label for="archivoInput">
+            📂 Seleccionar archivo
+        </label>
+        <p *ngIf="nombreArchivo" class="nombre-archivo">{{ nombreArchivo }}</p>
+
+        <p class="error" *ngIf="errorSinArchivo">*Selecciona un archivo*</p>
+        <p class="error" *ngIf="errorArchivoVacio">*Selecciona un archivo valido*</p>
         <span class="botones">
-            <button type="submit">Cargar</button>
+            <button type="button" (click)="procesarArchivo()">Cargar</button>
             <button type="button" (click)="cambiarComp(0)">Cancelar</button>
         </span>
-    </form>
 </article>

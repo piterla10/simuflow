@@ -1,8 +1,18 @@
+<input 
+  type="file" 
+  accept=".json" 
+  (change)="cargarSimulacion($event)" 
+  style="display: none;" 
+  #inputArchivo
+/>
+<p *ngIf="errorArchivoVacio">*Selecciona un archivo valido*</p>
+
 <div class="modal-overlay" *ngIf="visible">
   <div class="modal-content">
     <button type="button" class="boton" (click)="cerrarModal()"><img src="assets/x_blanca.png" alt="Cerrar"></button>
     <h3>Opciones de simulación</h3>
+    <button type="button" (click)="volverInicio()">Ir a inicio</button>
     <button type="button" (click)="guardarSimulacion()">Guardar</button>
-    <button type="button" (click)="cargarSimulacion()">Cargar</button>
+    <button type="button" (click)="inputArchivo.click()">Cargar</button>
   </div>
 </div>

@@ -11,6 +11,80 @@
     border: 1px solid var(--blanco1);
 }
 
+input{
+  display: none;
+}
+
+label {
+  background-color: var(--color-fondo);
+  color: var(--blanco1);
+  border: 1px solid var(--blanco2);
+  border-radius: 25px;
+  padding: 0.6rem 1rem;
+  font-size: 1.3rem;
+  font-weight: bold;
+  cursor: pointer;
+  display: inline-block;
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;  background-color: var(--color-fondo)
+}
+
+label:hover {
+  background-color: var(--color-azul2);
+  box-shadow: 0 0.1rem 0.4rem var(--color-fondo);
+}
+
+.nombre-archivo {
+  color: var(--blanco1);
+  font-size: 1.2rem;
+  margin: 0.75rem;
+  text-decoration: underline;
+  word-break: break-all;
+  cursor: default
+}
+
+.error{
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: var(--blanco1);
+  color: var(--rojo);
+  padding: 10px 10px;
+  border: 1px solid var(--color-fondo);
+  border-radius: 25px;
+  font-size: 1rem;
+  font-weight: bold;
+  opacity: 0;
+  animation: fadeInOut 3s ease forwards;
+  z-index: 9999;
+}
+
+@keyframes fadeInOut {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -10px);
+  }
+  15% {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+  70% {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -10px);
+  }
+}
+
+.botones{
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  margin-top: 1rem;
+}
+
 button{
   transition: background-color 0.3s ease, box-shadow 0.3s ease;  background-color: var(--color-fondo);
   font-weight: bold;
@@ -25,30 +99,6 @@ button{
 }
 
 button:hover{
-    background-color: var(--color-azul2);
-    box-shadow: 0 0.1rem 0.4rem var(--color-fondo);
-}
-
-form{
-  display: flex;
-  align-items: center;
-  flex-direction: column;
-  text-align: center;
-}
-
-form input{
-  font-size: 1.3rem;
-  margin: 0.3rem;
-  padding: 0.3rem;
-}
-
-form input{
-  color: var(--negro);
-}
-
-.botones{
-    display: flex;
-    align-items: center;
-    gap: 2rem;
-    margin-top: 1rem;
+  background-color: var(--color-azul2);
+  box-shadow: 0 0.1rem 0.4rem var(--color-fondo);
 }

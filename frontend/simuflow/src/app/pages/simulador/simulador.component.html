@@ -1,4 +1,4 @@
-<app-navbar></app-navbar>
+<app-navbar #navbar (abrir)="abrirModales('navbar')"></app-navbar>
 <section class="menu">
     <article>
         <button type="button" 
@@ -28,7 +28,7 @@
 <section class="grid-container">
     <article class="grid" [style.--cols]="columnas" [style.--rows]="filas">
         <div class="cell"
-        *ngFor="let cell of flatGrid"
+        *ngFor="let cell of datosGrid"
         [class.selected]="celdaSeleccionada === cell"
         (click)="controladorCanvas(cell)">
             <div *ngIf="cell.content" class="cell-content">

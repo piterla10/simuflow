@@ -1,6 +1,5 @@
-import { Component, Input, OnInit, viewChild, ViewChild } from '@angular/core';
-import { NavbarComponent } from "../../componentes_comunes/navbar/navbar.component";
-import { ArchivoService } from '../../services/ArchivoService';
+import { Component, OnInit, ViewChild } from '@angular/core';
+import { NavbarComponent } from '../../componentes_comunes/navbar/navbar.component';
 import { Cell, CellElement } from '../../services/Cell';
 import { CommonModule } from '@angular/common';
 import { SimulacionService } from '../../services/SimulacionService';
@@ -25,28 +24,28 @@ export class SimuladorComponent implements OnInit {
   @ViewChild('elemento') modalCrearElemento!: CrearElementoComponent;
   @ViewChild('basura') modalBasura!: BasuraComponent;
   @ViewChild('elementoDetalles') modalElementoDetalles!: ElementoDetallesComponent;
+  @ViewChild('navbar') modalNavbar!: NavbarComponent;
 
-  constructor(private archivoService: ArchivoService, 
-    private simulacionService: SimulacionService){}
+  constructor(private simulacionService: SimulacionService){}
   
   // Esta variable es para guardar la suscripción del observable que
   // se utiliza para guardar los datos del grid y tal. Se podría
   // hacer sin variable pero al utilizarla luego se puede destruir
   // en ngOnDestroy y se evitan fugas de memoria.
-  private saveSubscription!: Subscription;
+  private guardarDatos!: Subscription;
+  private cargarDatos!: Subscription;
 
   // para el manejo del Grid
   // publico para que se pueda acceder desde el html
   public filas!: number;
   public columnas!: number;
-  public flatGrid: Cell[] = [];
   public celdaSeleccionada: Cell | null = null;
   private idElemento: number = 0;
   
-  // datos que recibimos de inicio
-  private datos: any;
-      // esto ya se usará cuanto toque ponerse con lo de guardar el archivo en una bd
-  private archivo: File | null = null; 
+  // información que recibimos de inicio o vamos rellenando
+  private info: any;
+  public datosGrid: Cell[] = [];
+
 
   // para cambiar las herramientas seleccionadas
   public modoActivo: 'edicion' | 'simulacion' = 'edicion';
@@ -58,40 +57,47 @@ export class SimuladorComponent implements OnInit {
 
   ngOnInit(){
 
-    // Habrá que hacer que se guarde también la variable flatGrid en localhost para
-    // que al recuperar el sistema no solo se coloquen las celdas sino también los elementos con las 
-    // disposiciones que tenían previamente y tal
 
     // guardamos los datos del sistema
-    const datosJSON = localStorage.getItem('datosGrid');
-    this.archivo = this.archivoService.getArchivo();
-
-    if(datosJSON){
-      this.datos = JSON.parse(datosJSON);
-      this.filas = this.datos.filas;
-      this.columnas = this.datos.columnas;
+    const infoJSON = localStorage.getItem('infoGrid');
+    if(infoJSON){
+      this.info = JSON.parse(infoJSON);
+      this.filas = this.info.filas;
+      this.columnas = this.info.columnas;
     }
 
-    const flatGridJSON = localStorage.getItem('flatGrid');
-    if (flatGridJSON) {
-      // hacemos que se cree el proxy de flatGrid para que se guarde automáticamente
-      this.flatGrid = JSON.parse(flatGridJSON);
+    const datosGridJSON = localStorage.getItem('datosGrid');
+    if (datosGridJSON) {
+      this.datosGrid = JSON.parse(datosGridJSON);
     } else {
       this.createGrid();
       // guardo por primera vez en localStorage
-      localStorage.setItem('flatGrid', JSON.stringify(this.flatGrid));
+      this.guardarGrid();
     }
 
     // guardamos la suscripción en la variable y le asignamos que llame a 
     // guardarDatosSimulación() cuando se haga .next() en el service
-    this.saveSubscription = this.simulacionService.saveRequested$.subscribe(() => {
+    this.guardarDatos = this.simulacionService.guardarDatos$.subscribe(() => {
       this.guardarDatosSimulacion();
     });
+
+    this.cargarDatos = this.simulacionService.cargarDatos$.subscribe(datos =>{
+      if(datos){
+        this.info = datos.info;
+        this.datosGrid = datos.grid;
+        this.filas = datos.info.filas;
+        this.columnas = datos.info.columnas;
+        // guardamos en el localstorage los datos nuevos
+        this.guardarGrid();
+        localStorage.setItem('infoGrid', JSON.stringify(this.info));
+      }
+    })
   }
 
   // destructor de la variable que estaba pendiente de si se clica el guardar
   ngOnDestroy() {
-    this.saveSubscription.unsubscribe();
+    this.guardarDatos?.unsubscribe();
+    this.cargarDatos?.unsubscribe();
   }
 
   // --------------------------------------- SELECCIÓN DE MODO Y CAMBIO DE HERRAMIENTA ---------------------------------------
@@ -166,6 +172,10 @@ export class SimuladorComponent implements OnInit {
       case 'elementoDetalles':
         this.modalElementoDetalles.abrirModal();
         break;
+      case 'navbar':
+        if(this.modalActual && this.modalActual !== 'navbar'){
+          this.cerrarModales(this.modalActual)
+        }
     }
     this.modalActual = nombreModal;
   }
@@ -181,11 +191,15 @@ export class SimuladorComponent implements OnInit {
       case 'elementoDetalles':
         this.modalElementoDetalles.cerrarModal();
         break;
+      case 'navbar':
+        this.modalNavbar.cerrarModal();
+        break;
       case '':
         // este caso es para cerrar todos los modales que puedan estar abiertos
         this.modalCrearElemento.cerrarModal();
         this.modalBasura.cerrarModal();
         this.modalElementoDetalles.cerrarModal();
+        this.modalNavbar.cerrarModal();
         break;
     }
       this.modalActual = null;
@@ -276,7 +290,7 @@ export class SimuladorComponent implements OnInit {
   // para crear elementos en el sistema
   lapiz(cell:Cell){
     if(!cell.content){
-      const celdaGrid = this.flatGrid.find(
+      const celdaGrid = this.datosGrid.find(
         (celda) => celda.fila === cell.fila && celda.columna === cell.columna);
         
       let contenido: CellElement;
@@ -339,10 +353,10 @@ export class SimuladorComponent implements OnInit {
 
   // función de la basura para eliminar todo el contenido 
   confirmarBorrado(){
-    // recorrer el array de this.flatGrid y vaciarlo entero
+    // recorrer el array de this.datosGrid y vaciarlo entero
     // en un futuro habrá que también borrar los agentes controladores
-    for (let i = 0; i < this.flatGrid.length; i++) {
-      this.flatGrid[i].content = null;
+    for (let i = 0; i < this.datosGrid.length; i++) {
+      this.datosGrid[i].content = null;
     }
     // guardamos en localstorage
     this.guardarGrid();
@@ -365,8 +379,23 @@ export class SimuladorComponent implements OnInit {
 // --------------------------------------- CREACIÓN DEL GRID Y MANEJO DEL GUARDADO Y CARGA DE DATOS ---------------------------------------
   // función para guardar los datos en la bd
   guardarDatosSimulacion() {
-    // Aquí iría la llamada al servicio para guardar en BD
-    // this.simulationService.guardarEnBD(datosParaGuardar);
+    const datos = {
+      info: this.info,
+      grid: this.datosGrid
+    };
+
+    const contenido = JSON.stringify(datos, null, 2);
+
+    const blob = new Blob([contenido], {type: 'application/json'});
+
+    const url = URL.createObjectURL(blob);
+    const enlace = document.createElement('a');
+    enlace.href = url;
+    enlace.download = `${datos.info.nombre}.json`;
+    enlace.click();
+
+    URL.revokeObjectURL(url);
+
   }
 
   // para crear el grid
@@ -374,7 +403,7 @@ export class SimuladorComponent implements OnInit {
     for (let i = 0; i < this.filas; i++) {
       for (let j = 0; j < this.columnas; j++) {
         const cell = { fila: i, columna: j, content: null };
-        this.flatGrid.push(cell);
+        this.datosGrid.push(cell);
       }
     }
   }
@@ -382,7 +411,7 @@ export class SimuladorComponent implements OnInit {
 // -------------------------------- FUNCION PARA EL GUARDADO EN LOCALSTORAGE  ----------------------------
 
   guardarGrid(){
-    localStorage.setItem('flatGrid', JSON.stringify(this.flatGrid));
+    localStorage.setItem('datosGrid', JSON.stringify(this.datosGrid));
   }
 
 }

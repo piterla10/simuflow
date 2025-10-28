@@ -1,6 +1,5 @@
-import { Component, ViewChild } from '@angular/core';
+import { Component, EventEmitter, Input, Output, ViewChild } from '@angular/core';
 import { ModalOpcionesComponent } from "../modal-opciones/modal-opciones.component";
-import { SimulacionService } from '../../services/SimulacionService';
 
 @Component({
   selector: 'app-navbar',
@@ -10,17 +9,15 @@ import { SimulacionService } from '../../services/SimulacionService';
 })
 export class NavbarComponent {
   @ViewChild('modal') modal!: ModalOpcionesComponent;
-  constructor(private simulacionServicio: SimulacionService) {}
+  @Output() abrir = new EventEmitter<void>();
 
   abrirModal() {
     this.modal.abrirModal();
+    this.abrir.emit();
+  }
+  
+  cerrarModal(){
+    this.modal.cerrarModal();
   }
 
-  onGuardarClick() {
-    this.simulacionServicio.requestSave();
-  }
-
-  onCargarClick() {
-    // Lógica para cargar (se implementará luego)
-  }
 }
