@@ -13,38 +13,56 @@ export class ElementoDetallesComponent implements OnChanges{
   @Input() celda!: Cell;
   @Output() actualizar = new EventEmitter<Cell>();
 
+  // para manejar la visibilidad del modal y los colores de los elementos
   visible = false;
-  datosSim = '';
   colorCelda = 1;
 
+  // variables a rellenar en caso de que la celda contenga una zona de consumo
+  datosSim = "0";
+
   // variables a rellenar en caso de que la celda contenga un depósito
-  altura!: number;
-  capacidad!: number;
-  contenidoActual!: number;
+  solera: number = 1;
+  alturaMax: number = 2.5;
+  capacidad: number = 5;
+  alturaActual: number = 1;
+
+  // variables a rellenar en caso de que la celda contenga un generador
+  produccion: number = 0;
+  cantidadMax: number = 30;
+
+  // variables a rellenar en caso de que la celda contenga una tubería
+  presionMaxima: number = 10;
+  presionMinima: number = 1;
+
 
   ngOnChanges(): void {
-    if (!this.celda) { // si todavía no se ha recibido el input, salimos
-      this.datosSim = '';
-      this.altura = 1;
-      this.capacidad = 10;
-      this.contenidoActual = 5;
+    // si todavía no se ha recibido el input, salimos
+    if (!this.celda) {
       return;
     }
     
     // para detectar el color de la celda
     this.colorActual();
-    console.log(this.colorCelda)
-    if('datosSimulacion' in this.celda.content!){
+
+    // para inicializar los valores que se mostrarán en cada campo del elemento al seleccionarlo
+    if(this.celda.content?.tipo === "deposito"){
+      this.solera = this.celda.content.solera;
+      this.alturaActual = this.celda.content.alturaActual;
+      this.capacidad = this.celda.content.capacidad;
+      this.alturaMax = this.celda.content.alturaMax;
+
+    }else if(this.celda.content?.tipo === "generador"){
+      this.produccion = this.celda.content.produccion;
+      this.cantidadMax = this.celda.content.cantidadMax;
+
+    }else if(this.celda.content?.tipo === "tuberia"){
+      this.presionMaxima = this.celda.content.presionMax;
+      this.presionMinima = this.celda.content.presionMin;
+    
+    }else if(this.celda.content?.tipo === "consumo"){
       this.datosSim = this.celda.content!.datosSimulacion.join(', ');
-    } else {
-      this.datosSim = '';
     }
 
-    if(this.celda.content?.tipo === "deposito"){
-      this.altura = this.celda.content.altura;
-      this.capacidad = this.celda.content.capacidad;
-      this.contenidoActual = this.celda.content.contenidoActual;
-    }
   }
 
 
@@ -62,6 +80,7 @@ export class ElementoDetallesComponent implements OnChanges{
     this.actualizar.emit(this.celda);
   }
   
+  // esto sirve para todo el tema de los colores de las imágenes junto con las dos funciones de abajo
   colores = [
     { id: 1, color: '#ffffffff', nombre: 'blanco'},
     { id: 2, color: '#e0e0e0', nombre: 'gris'},
@@ -98,7 +117,7 @@ export class ElementoDetallesComponent implements OnChanges{
 
   // función para guardar los números que servirán como datos de simulación 
   // mientras no esté funcionando el agente controlador
-  procesar(){
+  procesarDatosSimulacion(){
     if('datosSimulacion' in this.celda.content!){
       this.celda.content.datosSimulacion = this.datosSim
         .split(',')
@@ -107,10 +126,15 @@ export class ElementoDetallesComponent implements OnChanges{
     }
   }
 
-  // funciones para guardar los datos cambiados de los elementos en tiempo real
-  procesarAltura(){
-    if('altura' in this.celda.content!)
-      this.celda.content!.altura = this.altura;
+  // funciones para guardar los datos cambiados de los elementos en tiempo real si es un depósito
+  procesarSolera(){
+    if('solera' in this.celda.content!)
+      this.celda.content!.solera = this.solera;
+  }
+
+  procesarAlturaMax(){
+    if('alturaMax' in this.celda.content!)
+      this.celda.content!.alturaMax = this.alturaMax;
   }
 
   procesarCapacidad(){
@@ -118,8 +142,39 @@ export class ElementoDetallesComponent implements OnChanges{
       this.celda.content!.capacidad = this.capacidad;
   }
 
-  procesarContenido(){
-    if('contenidoActual' in this.celda.content!)
-      this.celda.content!.contenidoActual = this.contenidoActual;
+  procesarAlturaActual(){
+    if('alturaActual' in this.celda.content!)
+      this.celda.content!.alturaActual = this.alturaActual;
+  }
+
+  // funciones para guardar los datos cambiados de los elementos en tiempo real si es un generador
+  procesarProduccion(){
+    // comprobamos que no lo deje en blanco para que no sea nulo
+    if (isNaN(this.produccion)) {
+      this.produccion = 0;
+    }
+
+    // Limitar entre 0 y 1
+    if (this.produccion < 0) {
+      this.produccion = 0;
+    } else if (this.produccion > 1) {
+      this.produccion = 1;
+    }
+    if('produccion' in this.celda.content!)
+      this.celda.content!.produccion = this.produccion;
+  }
+  procesarCantidadMax(){
+    if('cantidadMax' in this.celda.content!)
+      this.celda.content!.cantidadMax = this.cantidadMax;
+  }
+
+  // funciones para guardar los datos cambiados de los elementos en tiempo real si es una tubería
+  procesarPresionMaxima(){
+    if('presionMax' in this.celda.content!)
+      this.celda.content!.presionMax = this.presionMaxima;
+  }
+  procesarPresionMinima(){
+    if('presionMin' in this.celda.content!)
+      this.celda.content!.presionMin = this.presionMinima;
   }
 }

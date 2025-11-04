@@ -11,11 +11,10 @@ import { Elemento } from '../../services/Elemento';
 import { CrearElementoComponent } from "../../componentes_edicion/crear-elemento/crear-elemento.component";
 import { ElementoDetallesComponent } from "../../componentes_edicion/elemento-detalles/elemento-detalles.component";
 import { BasuraComponent } from '../../componentes_edicion/basura/basura.component';
-import { ControladoresComponent } from '../../componentes_edicion/controladores/controladores.component';
 
 @Component({
   selector: 'app-simulador',
-  imports: [NavbarComponent, CommonModule, HerramientasEdicionComponent, HerramientasSimulacionComponent, CrearElementoComponent, ElementoDetallesComponent, BasuraComponent, ControladoresComponent],
+  imports: [NavbarComponent, CommonModule, HerramientasEdicionComponent, HerramientasSimulacionComponent, CrearElementoComponent, ElementoDetallesComponent, BasuraComponent],
   templateUrl: './simulador.component.html',
   styleUrl: './simulador.component.scss'
 })
@@ -144,14 +143,6 @@ export class SimuladorComponent implements OnInit {
         break;
       case 'basura':
         this.abrirModales('basura');
-        break;
-      case 'agente':
-        // habrá que hacer esto pero con los modales del agente
-        // if(this.crearElemento.visible){
-        //   this.cerrarModales('crearElemento');
-        // }else{
-        //   this.abrirModales('crearElemento');
-        // }
         break;
     }
   }
@@ -308,11 +299,11 @@ export class SimuladorComponent implements OnInit {
         contenido = {
             id: this.generarId(),
             tipo: 'deposito', 
-            altura: 1,
+            solera: 1,
+            alturaActual: 1,
             capacidad: 5,
-            contenidoActual: 2.5,
+            alturaMax: 2.5,
             imagen: 'assets/elementos/deposito_blanco_4.png',
-            datosSimulacion: [0],
             peligro: null
           };
         break;
@@ -320,8 +311,9 @@ export class SimuladorComponent implements OnInit {
           contenido = {
             id: this.generarId(),
             tipo: 'generador',
+            produccion: 0,
+            cantidadMax: 30,
             imagen: 'assets/elementos/desaladora_blanco.png',
-            datosSimulacion: [0],
             // peligro: null
           };
         break;
@@ -330,6 +322,7 @@ export class SimuladorComponent implements OnInit {
             id: this.generarId(),
             tipo: 'tuberia',
             presionMax: 10,
+            presionMin: 1,
             presionActual: 5,
             imagen: 'assets/elementos/tuberia_blanco.png',
             peligro: null
@@ -354,7 +347,6 @@ export class SimuladorComponent implements OnInit {
   // función de la basura para eliminar todo el contenido 
   confirmarBorrado(){
     // recorrer el array de this.datosGrid y vaciarlo entero
-    // en un futuro habrá que también borrar los agentes controladores
     for (let i = 0; i < this.datosGrid.length; i++) {
       this.datosGrid[i].content = null;
     }
@@ -365,13 +357,17 @@ export class SimuladorComponent implements OnInit {
   infoElemento(elemento: CellElement): string{
     switch (elemento.tipo) {
       case 'generador':
-          return `${elemento.datosSimulacion.join(', ')}`;
+        // aquí sería la potencia a la que está encendida la bomba
+          return `${elemento.produccion * 100}%`;
       case 'deposito':
-            const contenido = elemento.contenidoActual / elemento.capacidad * 100;
-          return `${contenido} %`;
+        // altura del agua actual (nivel del agua en metros)
+          return `${elemento.alturaActual}(m)`;
       case 'consumo':
+        // consumo actual
+        // habrá que arreglar esto cuando nos metamos en el tema simulación
           return `${elemento.datosSimulacion.join(', ')}`;
       case 'tuberia':
+        // presión actual
           return `${elemento.presionActual}`;
     }
   }

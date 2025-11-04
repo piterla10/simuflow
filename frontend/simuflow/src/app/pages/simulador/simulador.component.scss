@@ -4,6 +4,7 @@
   height: 60px;
   display: flex;
   justify-content: flex-start;
+  
 }
 
 .menu article{
@@ -46,7 +47,7 @@
 }
 
 .menu article:nth-child(2) {
-  width: 600px;
+  width: 550px;
 }
 
 /* Contenedor exterior: ocupa 95 % de ancho del viewport y centra el grid */
@@ -81,7 +82,7 @@
 }
 
 .cell.selected {
-  border: 1px solid blue;
+  border: 2px solid var(--rojo);
 }
 
 .cell-content {

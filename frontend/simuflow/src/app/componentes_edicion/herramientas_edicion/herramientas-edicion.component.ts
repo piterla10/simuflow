@@ -15,7 +15,7 @@ export class HerramientasEdicionComponent {
   // seleccionamos la herramienta para darle el css
   setHerramienta(herramienta: Herramienta){
     //esto del agente es para controlar los modales
-    if(herramienta != 'agente' && herramienta != 'basura'){
+    if(herramienta != 'basura'){
       this.herramientaActiva = herramienta;
     }
     this.mandarHerramienta(herramienta);

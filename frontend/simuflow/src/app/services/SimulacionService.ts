@@ -28,7 +28,6 @@ export class SimulacionService {
   // declaración de datosSimulacion y tal
   cargar(data: any) {
     this.cargarDatos.next(data);
-
   }
   
 }
