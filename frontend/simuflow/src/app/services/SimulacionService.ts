@@ -23,9 +23,6 @@ export class SimulacionService {
     this.guardarDatos.next();
   }
 
-  // Esta función creo que la eliminaré y haré otra logica mas 
-  // sencilla para las llamadas a la api y lo mismo con la 
-  // declaración de datosSimulacion y tal
   cargar(data: any) {
     this.cargarDatos.next(data);
   }

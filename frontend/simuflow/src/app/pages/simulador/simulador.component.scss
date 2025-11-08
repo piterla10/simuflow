@@ -101,7 +101,7 @@
   padding: 0px;
 }
 
-.cell p{
+.infoElemento{
   width: 2rem;
   margin: 0;
   padding: 2px;
@@ -109,6 +109,19 @@
   position: absolute;
   text-align: center;
   background-color: var(--color-azul);
+  color: var(--blanco1);
+  border: 1px solid var(--blanco1);
+}
+
+.infoSistema{
+  width: 1rem;
+  margin: 0;
+  padding: 2px;
+  font-size: 0.5rem;
+  position: absolute;
+  right:0;
+  text-align: center;
+  background-color: var(--color-fondo);
   color: var(--blanco1);
   border: 1px solid var(--blanco1);
 }

@@ -32,7 +32,12 @@
         (click)="controladorCanvas(cell)">
             <div *ngIf="cell.content" class="cell-content">
                 <img [src]="cell.content.imagen" [alt]="cell.content.tipo">
-                <p>{{infoElemento(cell.content)}}</p>
+                <p class="infoElemento">{{infoElemento(cell.content)}}</p>
+                <p class="infoSistema" *ngIf="cell.content.sistema.length > 0">
+                    <ng-container *ngFor="let id of infoSistema(cell)">
+                        <div>{{ id }}</div>
+                    </ng-container>
+                </p>
             </div>
         </div>
     </article>

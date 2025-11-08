@@ -11,6 +11,7 @@ import { Elemento } from '../../services/Elemento';
 import { CrearElementoComponent } from "../../componentes_edicion/crear-elemento/crear-elemento.component";
 import { ElementoDetallesComponent } from "../../componentes_edicion/elemento-detalles/elemento-detalles.component";
 import { BasuraComponent } from '../../componentes_edicion/basura/basura.component';
+import { Sistema } from '../../services/Sistema';
 
 @Component({
   selector: 'app-simulador',
@@ -40,6 +41,7 @@ export class SimuladorComponent implements OnInit {
   public columnas!: number;
   public celdaSeleccionada: Cell | null = null;
   private idElemento: number = 0;
+  private idSistema: number = 0;
   
   // información que recibimos de inicio o vamos rellenando
   private info: any;
@@ -54,6 +56,9 @@ export class SimuladorComponent implements OnInit {
   // variable para controlar el modal activo
   private modalActual: string | null = null;
 
+  // variable para almacenar los sistemas que se vayan creando con los elementos
+  public sistemas: Sistema[] = [];
+
   ngOnInit(){
 
 
@@ -66,12 +71,17 @@ export class SimuladorComponent implements OnInit {
     }
 
     const datosGridJSON = localStorage.getItem('datosGrid');
-    if (datosGridJSON) {
+    if(datosGridJSON) {
       this.datosGrid = JSON.parse(datosGridJSON);
     } else {
       this.createGrid();
       // guardo por primera vez en localStorage
       this.guardarGrid();
+    }
+
+    const sistemasJSON = localStorage.getItem('datosSistemas');
+    if(sistemasJSON){
+      this.sistemas = JSON.parse(sistemasJSON);
     }
 
     // guardamos la suscripción en la variable y le asignamos que llame a 
@@ -86,8 +96,10 @@ export class SimuladorComponent implements OnInit {
         this.datosGrid = datos.grid;
         this.filas = datos.info.filas;
         this.columnas = datos.info.columnas;
+        this.sistemas = datos.sistemas;
         // guardamos en el localstorage los datos nuevos
         this.guardarGrid();
+        this.guardarSistemas();
         localStorage.setItem('infoGrid', JSON.stringify(this.info));
       }
     })
@@ -236,7 +248,6 @@ export class SimuladorComponent implements OnInit {
     
     // guardamos en localstorage
     this.guardarGrid();
-
   }
 
   // para mover el contenido de una celda a otra
@@ -244,6 +255,11 @@ export class SimuladorComponent implements OnInit {
     // si ya teníamos una celda previamente seleccionada y la que hemos clicado no 
     // tiene contenido entonces se le cambia de la anterior a esa
     if (this.celdaSeleccionada && !cell.content) {
+      // if necesario para el correcto funcionamiento de la asignación de sistemas
+      if(this.celdaSeleccionada.content?.tipo !== 'tuberia'){
+        this.desasignarTodo(this.celdaSeleccionada);
+      }
+
       // Lógica para mover el contenido si hay uno seleccionado
       cell.content = this.celdaSeleccionada.content;
       this.celdaSeleccionada.content = null;
@@ -255,6 +271,11 @@ export class SimuladorComponent implements OnInit {
 
       // si tenemos una seleccionada y la queremos cambiar por otra con contenido
     } else if(this.celdaSeleccionada && cell.content && this.celdaSeleccionada !== cell){
+      // if necesario para el correcto funcionamiento de la asignación de sistemas
+      if(this.celdaSeleccionada.content?.tipo !== 'tuberia'){
+        this.desasignarTodo(this.celdaSeleccionada);
+      }
+
       const aux = this.celdaSeleccionada.content;
       this.celdaSeleccionada.content = cell.content;
       cell.content = aux;
@@ -265,12 +286,13 @@ export class SimuladorComponent implements OnInit {
     } else if(this.celdaSeleccionada == cell){
       this.celdaSeleccionada = null;
     }
+
+    // comprobamos el estado de los sistemas actual
+    this.estadoSistemas();
+
     // guardamos en localstorage
     this.guardarGrid();
-  }
-
-  private generarId(): number{
-    return this.idElemento++;
+    this.guardarSistemas();
   }
 
   // función para seleccionar el elemento a poner en el canvas
@@ -280,10 +302,10 @@ export class SimuladorComponent implements OnInit {
 
   // para crear elementos en el sistema
   lapiz(cell:Cell){
+    // si la celda no tiene un elemento ya
     if(!cell.content){
-      const celdaGrid = this.datosGrid.find(
-        (celda) => celda.fila === cell.fila && celda.columna === cell.columna);
-        
+      
+      // creamos el contenido a introducir en la celda
       let contenido: CellElement;
       switch(this.elemento){
       case 'consumo':
@@ -292,6 +314,7 @@ export class SimuladorComponent implements OnInit {
             tipo: 'consumo',
             imagen: 'assets/elementos/consumo_blanco.png',
             datosSimulacion: [0],
+            sistema: []
             // peligro: null
           };
         break;
@@ -304,7 +327,8 @@ export class SimuladorComponent implements OnInit {
             capacidad: 5,
             alturaMax: 2.5,
             imagen: 'assets/elementos/deposito_blanco_4.png',
-            peligro: null
+            peligro: null,
+            sistema: []
           };
         break;
       case 'generador':
@@ -314,6 +338,7 @@ export class SimuladorComponent implements OnInit {
             produccion: 0,
             cantidadMax: 30,
             imagen: 'assets/elementos/desaladora_blanco.png',
+            sistema: []
             // peligro: null
           };
         break;
@@ -325,23 +350,38 @@ export class SimuladorComponent implements OnInit {
             presionMin: 1,
             presionActual: 5,
             imagen: 'assets/elementos/tuberia_blanco.png',
-            peligro: null
+            peligro: null,
+            sistema: []
           };
         break;
       }
-      // esto funcionaría para todo menos las tuberías, habrá que tenerlo en cuenta
       
-      celdaGrid!.content = contenido;
+      cell!.content = contenido;
+
+      // comprobamos el estado de los sistemas actual
+      this.estadoSistemas();
+
       // guardamos en localstorage
       this.guardarGrid();
+      this.guardarSistemas();
     }
   }
 
   // funcion del borrador de eliminar el contenido de una celda
   borrador(cell:Cell){
+    if(cell.content?.tipo === "tuberia"){
+      this.borrarSistema(cell);
+    }else{
+      this.desasignarTodo(cell);
+    }
     cell.content = null;
+    
+    // comprobamos el estado de los sistemas actual
+    this.estadoSistemas();
+    
     // guardamos en localstorage
     this.guardarGrid();
+    this.guardarSistemas();
   }
 
   // función de la basura para eliminar todo el contenido 
@@ -350,10 +390,16 @@ export class SimuladorComponent implements OnInit {
     for (let i = 0; i < this.datosGrid.length; i++) {
       this.datosGrid[i].content = null;
     }
+
+    // vaciamos el array de sistemas
+    this.sistemas = [];
+    
     // guardamos en localstorage
     this.guardarGrid();
+    this.guardarSistemas();
   }
 
+  // información que muestra cada elemento a la izquierda
   infoElemento(elemento: CellElement): string{
     switch (elemento.tipo) {
       case 'generador':
@@ -372,12 +418,271 @@ export class SimuladorComponent implements OnInit {
     }
   }
 
-// --------------------------------------- CREACIÓN DEL GRID Y MANEJO DEL GUARDADO Y CARGA DE DATOS ---------------------------------------
+// --------------------------------------- LOGICA DE LAS TUBERÍAS --------------------------------------- 
+  // hay que hacer que cuando se edite el grid (con crear elemento, mover elemento o borrar elemento, 
+  // si se borra todo el sistema cancelar todo lo que se haya creado previamente) se llame a una 
+  // función que recorra el grid en busca de tuberías y que con cada una de ellas se fije en sus 
+  // celdas adyacentes para ver que elementos tiene para conectar
+
+
+  estadoSistemas(){
+    // variable auxiliar para la comprobación de las celdas adyacentes
+    const vecinos = [
+      [-1, -1], [-1, 0], [-1, 1],
+      [0, -1],           [0, 1],
+      [1, -1],  [1, 0],  [1, 1]
+    ];
+
+    for (const cell of this.datosGrid) {
+    // el continue sirve para hacer que se pase a la siguiente iteración del bucle sin ejecutar lo que 
+    // queda dentro del mismo
+      // si encontramos una tubería
+      if (cell.content?.tipo !== 'tuberia') continue;
+      
+      let auxGeneradores: Cell[] = [];
+      let auxDepositos: Cell[] = [];
+      let auxAreas: Cell[] = [];
+      
+      // comprobamos sus vecinos guardando los que encontremos en los arrays de arriba
+      for (const [dx, dy] of vecinos) {
+  
+        const nf = cell.fila + dx;
+        const nc = cell.columna + dy;
+  
+        const vecino = this.getCell(nf, nc);
+        if (!vecino || !vecino.content) continue;
+  
+        switch (vecino.content.tipo) {
+          case 'generador':
+            auxGeneradores.push(vecino);
+            break;
+          case 'deposito':
+            auxDepositos.push(vecino);
+            break;
+          case 'consumo':
+            auxAreas.push(vecino);
+            break;
+        }
+      }
+
+      // si pertenece a un sistema
+      if(cell.content.sistema.length === 1){
+        
+        // comprobamos cual es el id del sistema al que queremos acceder viendo el sistema al que 
+        // pertenece la tubería
+        const sistemaId = cell.content!.sistema[0].id;
+        // una vez lo tenemos buscamos el sistema en el array de sistemas para hacer las comprobaciones
+        const sistema = this.sistemas.find(s => s.id === sistemaId);
+
+        // se comprueba si el sistema es válido
+        if(auxGeneradores.length > 0 && auxDepositos.length > 0 && auxAreas.length > 0){
+          // comprobamos si hay algún elemento que ya no se encuentra en el sistema y lo guardamos
+          let depositosCambiados = this.encontrarElementos(sistema!.depositos, auxDepositos);
+          let generadoresCambiados = this.encontrarElementos(sistema!.generadores, auxGeneradores);
+          let areasCambiadas = this.encontrarElementos(sistema!.consumo, auxAreas);
+
+          // borramos los sistemas de los elementos viejos
+          this.desasignarSistemaElemento(depositosCambiados, sistemaId);
+          this.desasignarSistemaElemento(generadoresCambiados, sistemaId);
+          this.desasignarSistemaElemento(areasCambiadas, sistemaId);
+          
+
+          // Borramos del sistema los elementos que ya no están de esta forma al volver a llamar a
+          // encontrarElementos ya te devolvería solo los elementos que se han añadido nuevos ya que
+          // son los que NO se encuentran en el sistema
+          sistema!.depositos = this.limpiarSistema(sistema!.depositos, depositosCambiados);
+          sistema!.generadores = this.limpiarSistema(sistema!.generadores, generadoresCambiados);
+          sistema!.consumo = this.limpiarSistema(sistema!.consumo, areasCambiadas);
+
+
+          // buscamos los elementos nuevos que se puedan haber añadido al sistema
+          depositosCambiados = this.encontrarElementos(auxDepositos, sistema!.depositos);
+          generadoresCambiados = this.encontrarElementos(auxGeneradores, sistema!.generadores);
+          areasCambiadas = this.encontrarElementos(auxAreas, sistema!.consumo);
+
+
+          // añadimos los sistemas a los elementos nuevos
+          this.asignarSistemaElemento(depositosCambiados, sistemaId);
+          this.asignarSistemaElemento(generadoresCambiados, sistemaId);
+          this.asignarSistemaElemento(areasCambiadas, sistemaId);
+
+          
+          // añadimos los elementos nuevos al sistema
+          sistema!.depositos = auxDepositos;
+          sistema!.generadores = auxGeneradores;
+          sistema!.consumo = auxAreas;
+
+        // si el sistema no es valido 
+        }else{
+          // se elimina el sistema de todos los elementos incluido la tubería
+          this.desasignarSistemaElemento(sistema!.depositos, sistema!.id);
+          this.desasignarSistemaElemento(sistema!.generadores, sistema!.id);
+          this.desasignarSistemaElemento(sistema!.consumo, sistema!.id);
+          this.desasignarSistemaElemento([cell], sistema!.id);
+
+          // se elimina el sistema del array de sistemas
+          this.sistemas.filter(s => s.id !== sistema!.id)
+        }
+      }else{
+        // si no pertenece a un sistema, comprueba si sería válido y lo crearía en caso de que así sea,
+        // si no es válido simplemente no se crearía nada
+        if (auxGeneradores.length > 0 && auxDepositos.length > 0 && auxAreas.length > 0) {
+          let sistemaNuevo = {
+            id: this.idSistema,
+            tuberia: cell,
+            depositos: auxDepositos,
+            generadores: auxGeneradores,
+            consumo: auxAreas
+          }
+  
+          // añadimos al depósito el sistema al que pertenece
+          this.asignarSistemaElemento(auxDepositos);
+  
+          // añadimos al generador el sistema al que pertenece
+          this.asignarSistemaElemento(auxGeneradores);
+  
+          // añadimos a la zona de consumo el sistema al que pertenece
+          this.asignarSistemaElemento(auxAreas);
+
+          // añadimos a la tubería el sistema al que pertenece
+          this.asignarSistemaElemento([cell]);
+  
+          this.sistemas.push(sistemaNuevo);
+          this.generarIdSistema();
+        }
+      }        
+    }
+
+    // aquí habría que hacer el guardado de los sistemas en localstorage
+  }
+
+  // función auxiliar para asignar un nuevo sistema a un elemento
+  // Según se le pase identificador o no, servirá para cuando se le esté añadiendo un sistema nuevo 
+  // o para cuando se esté añadiendo un sistema que ya estaba creado al elemento
+  asignarSistemaElemento(elemento: Cell[], identificador?: number){
+    for(const el of elemento){
+      // recorremos el elemento, si pertenece ya a algún sistema
+      if(el.content?.sistema.length! > 0){
+        // recorremos su array de sistemas
+        for(const aux of el.content?.sistema!){
+        // y actualizamos su porcentaje dividiendolo entre el número nuevo de sistemas a los que pertenece
+          aux.porcentaje = 100 / (el.content?.sistema.length! + 1);
+        }
+      }
+      // después se añade el nuevo sistema a su array de sistemas con el porcentaje correcto
+      el.content?.sistema.push({id: identificador !== undefined ? identificador : this.idSistema, porcentaje: 100 / (el.content?.sistema.length + 1)});
+    }
+  }
+
+  // función auxiliar para eliminar un sistema de un elemento
+  desasignarSistemaElemento(elemento: Cell[], identificador: number){
+    for(const el of elemento){
+      // recorremos el elemento, si pertenece a más de un sistema
+      if(el.content?.sistema.length! > 1){
+        // recorremos su array de sistemas
+        for(const aux of el.content?.sistema!){
+        // y actualizamos su porcentaje dividiendolo entre el número nuevo de sistemas a los que pertenece
+          aux.porcentaje = 100 / (el.content?.sistema.length! - 1);
+        }
+      }
+      // borramos el sistema al que pertenecía anteriormente
+      el.content!.sistema = el.content!.sistema.filter(
+        s => s.id !== identificador
+      );
+    }
+  }
+
+  // función auxiliar para encontrar los elementos del array actual que no están en nuevos
+  encontrarElementos(actual: Cell[], nuevos: Cell[]){
+    return actual.filter(a => !nuevos.some(n => n.content?.id === a.content?.id));
+  }
+
+  // función auxiliar para eliminar del sistema los elementos que se le pasan en removidos
+  limpiarSistema(original: Cell[], removidos: Cell[]): Cell[] {
+    return original.filter(
+      o => !removidos.some(r => r.content!.id === o.content!.id)
+    );
+  }
+
+  // función para borrar un sistema en caso de que el elemento que se borre sea una tuberia
+  borrarSistema(cell: Cell){
+    // si pertenece a un sistema
+      if(cell.content!.sistema.length === 1){
+        // comprobamos cual es el id del sistema al que queremos acceder viendo el sistema al que 
+        // pertenece la tubería
+        const sistemaId = cell.content!.sistema[0].id;
+        // una vez lo tenemos buscamos el sistema en el array de sistemas para hacer las comprobaciones
+        const sistema = this.sistemas.find(s => s.id === sistemaId);
+    
+        // se elimina el sistema de todos los elementos, la tubería no hace falta porque se va a 
+        // borrar el elemento entero, así que lo mismo da que tenga un sistema u otro
+        this.desasignarSistemaElemento(sistema!.depositos, sistema!.id);
+        this.desasignarSistemaElemento(sistema!.generadores, sistema!.id);
+        this.desasignarSistemaElemento(sistema!.consumo, sistema!.id);
+    
+        // se elimina el sistema del array de sistemas
+        this.sistemas.filter(s => s.id !== sistema!.id);
+      }
+  }
+
+  // función que se llama desde el html para indicar el numero de sistema al que pertenece el elemento
+  infoSistema(cell: Cell): number[]{
+  if (!cell.content?.sistema?.length) return [];
+
+  // ordenamos por id y los devolvemos
+  return cell.content.sistema
+    .map(s => s.id)
+    .sort((a, b) => a - b);
+  }
+
+  // función auxiliar que se llama cuando se mueve o elimina un objeto que sirve para eliminar el sistema 
+  // del mismo y el propio elemento de su sistema. De esta forma cuando se ejecute estadoSistema no dará error
+  desasignarTodo(cell: Cell){
+    // si no pertenece a ningún sistema salimos
+    if(!cell.content!.sistema) return;
+    
+    // encontramos el o los sistemas al que pertenece la cell 
+    const sistemasIds = cell.content!.sistema.map(s => s.id);
+    
+    // por cada sistema
+    for (const id of sistemasIds) {
+      // buscamos el que coincide
+      const sistema = this.sistemas.find(s => s.id === id);
+      if (!sistema) continue;
+
+      // --- BORRAR DE SUS ARRAYS SEGÚN EL TIPO ---
+      switch (cell.content!.tipo) {
+        case 'deposito':
+          sistema.depositos = sistema.depositos.filter(
+            d => d.content?.id !== cell.content!.id
+          );
+          break;
+
+        case 'generador':
+          sistema.generadores = sistema.generadores.filter(
+            g => g.content?.id !== cell.content!.id
+          );
+          break;
+
+        case 'consumo':
+          sistema.consumo = sistema.consumo.filter(
+            c => c.content?.id !== cell.content!.id
+          );
+          break;
+      }
+    }
+      // eliminamos el sistema al que pertenece si se da el caso
+      cell.content!.sistema = [];
+    
+  }
+
+// --------------------------------------- CREACIÓN DEL GRID Y MANEJO DEL GUARDADO DE DATOS ---------------------------------------
   // función para guardar los datos en la bd
   guardarDatosSimulacion() {
     const datos = {
       info: this.info,
-      grid: this.datosGrid
+      grid: this.datosGrid,
+      sistemas: this.sistemas,
     };
 
     const contenido = JSON.stringify(datos, null, 2);
@@ -408,6 +713,25 @@ export class SimuladorComponent implements OnInit {
 
   guardarGrid(){
     localStorage.setItem('datosGrid', JSON.stringify(this.datosGrid));
+  }
+
+  guardarSistemas(){
+    localStorage.setItem('datosSistemas', JSON.stringify(this.sistemas));
+  }
+
+// -------------------------------- OTRAS FUNCIONES  ----------------------------
+
+
+  private generarId(): number{
+    return this.idElemento++;
+  }
+
+  private generarIdSistema(): number{
+    return this.idSistema++;
+  }
+
+  getCell(fila: number, columna: number): Cell | null {
+    return this.datosGrid.find(c => c.fila === fila && c.columna === columna) || null;
   }
 
 }

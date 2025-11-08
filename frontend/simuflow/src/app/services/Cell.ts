@@ -5,6 +5,7 @@ export type ElementType = 'generador' | 'deposito' | 'consumo' | 'tuberia';
 interface BaseElement {
   tipo: ElementType;
   id: number;
+  sistema: {id: number, porcentaje: number}[];
 }
 
 // Interfaces específicas para cada tipo de elemento
