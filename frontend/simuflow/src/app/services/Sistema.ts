@@ -1,11 +1,11 @@
 import { Cell } from "./Cell";
 
-export type Sistema = {
-    id: number;
-    tuberia: Cell;
-    depositos: Cell[];
-    generadores: Cell[];
-    consumo: Cell[];
+export class Sistema {
+    id!: number;
+    tuberia!: Cell;
+    depositos!: Cell[];
+    generadores!: Cell[];
+    consumo!: Cell[];
     
 // habrá que añadir aquí una instancia de cada agente
 };

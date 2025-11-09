@@ -125,3 +125,17 @@
   color: var(--blanco1);
   border: 1px solid var(--blanco1);
 }
+
+.idElemento{
+  width: 1rem;
+  margin: 0;
+  padding: 2px;
+  font-size: 0.5rem;
+  position: absolute;
+  right:0;
+  bottom: 0;
+  text-align: center;
+  background-color: var(--color-fondo);
+  color: var(--blanco1);
+  border: 1px solid var(--blanco1);
+}

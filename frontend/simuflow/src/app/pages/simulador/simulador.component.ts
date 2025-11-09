@@ -41,7 +41,7 @@ export class SimuladorComponent implements OnInit {
   public columnas!: number;
   public celdaSeleccionada: Cell | null = null;
   private idElemento: number = 0;
-  private idSistema: number = 0;
+  private idSistema!: number;
   
   // información que recibimos de inicio o vamos rellenando
   private info: any;
@@ -60,9 +60,7 @@ export class SimuladorComponent implements OnInit {
   public sistemas: Sistema[] = [];
 
   ngOnInit(){
-
-
-    // guardamos los datos del sistema
+    // cargamos los datos del sistema de localstorage
     const infoJSON = localStorage.getItem('infoGrid');
     if(infoJSON){
       this.info = JSON.parse(infoJSON);
@@ -73,15 +71,30 @@ export class SimuladorComponent implements OnInit {
     const datosGridJSON = localStorage.getItem('datosGrid');
     if(datosGridJSON) {
       this.datosGrid = JSON.parse(datosGridJSON);
+      // si no tenemos en localstorage datosGrid
     } else {
       this.createGrid();
       // guardo por primera vez en localStorage
       this.guardarGrid();
     }
-
+    
+    const idElementoJSON = localStorage.getItem('idElemento');
+    if(idElementoJSON){
+      this.idElemento = JSON.parse(idElementoJSON);
+    }else{
+      this.idElemento = 0;
+    }
+    
     const sistemasJSON = localStorage.getItem('datosSistemas');
     if(sistemasJSON){
       this.sistemas = JSON.parse(sistemasJSON);
+    }
+    
+    const idSistemaJSON = localStorage.getItem('idSistema');
+    if(idSistemaJSON){
+      this.idSistema = JSON.parse(idSistemaJSON);
+    }else{
+      this.idSistema = 1;
     }
 
     // guardamos la suscripción en la variable y le asignamos que llame a 
@@ -93,10 +106,13 @@ export class SimuladorComponent implements OnInit {
     this.cargarDatos = this.simulacionService.cargarDatos$.subscribe(datos =>{
       if(datos){
         this.info = datos.info;
-        this.datosGrid = datos.grid;
         this.filas = datos.info.filas;
         this.columnas = datos.info.columnas;
+        this.datosGrid = datos.grid;
+        this.idElemento = datos.idElemento;
         this.sistemas = datos.sistemas;
+        this.idSistema = datos.idSistema;
+
         // guardamos en el localstorage los datos nuevos
         this.guardarGrid();
         this.guardarSistemas();
@@ -274,6 +290,11 @@ export class SimuladorComponent implements OnInit {
       // if necesario para el correcto funcionamiento de la asignación de sistemas
       if(this.celdaSeleccionada.content?.tipo !== 'tuberia'){
         this.desasignarTodo(this.celdaSeleccionada);
+        if(cell.content?.tipo === 'tuberia'){
+          this.borrarSistema(cell);
+        }else{
+          this.desasignarTodo(cell);
+        }
       }
 
       const aux = this.celdaSeleccionada.content;
@@ -292,7 +313,6 @@ export class SimuladorComponent implements OnInit {
 
     // guardamos en localstorage
     this.guardarGrid();
-    this.guardarSistemas();
   }
 
   // función para seleccionar el elemento a poner en el canvas
@@ -363,7 +383,6 @@ export class SimuladorComponent implements OnInit {
 
       // guardamos en localstorage
       this.guardarGrid();
-      this.guardarSistemas();
     }
   }
 
@@ -381,7 +400,6 @@ export class SimuladorComponent implements OnInit {
     
     // guardamos en localstorage
     this.guardarGrid();
-    this.guardarSistemas();
   }
 
   // función de la basura para eliminar todo el contenido 
@@ -419,12 +437,7 @@ export class SimuladorComponent implements OnInit {
   }
 
 // --------------------------------------- LOGICA DE LAS TUBERÍAS --------------------------------------- 
-  // hay que hacer que cuando se edite el grid (con crear elemento, mover elemento o borrar elemento, 
-  // si se borra todo el sistema cancelar todo lo que se haya creado previamente) se llame a una 
-  // función que recorra el grid en busca de tuberías y que con cada una de ellas se fije en sus 
-  // celdas adyacentes para ver que elementos tiene para conectar
-
-
+  // función que se encarga de crear las conexiones entre elementos y las guarda en sistemas
   estadoSistemas(){
     // variable auxiliar para la comprobación de las celdas adyacentes
     const vecinos = [
@@ -553,7 +566,8 @@ export class SimuladorComponent implements OnInit {
       }        
     }
 
-    // aquí habría que hacer el guardado de los sistemas en localstorage
+    // guardamos los sistemas en localstorage
+    this.guardarSistemas();
   }
 
   // función auxiliar para asignar un nuevo sistema a un elemento
@@ -682,7 +696,9 @@ export class SimuladorComponent implements OnInit {
     const datos = {
       info: this.info,
       grid: this.datosGrid,
+      idElemento: this.idElemento,
       sistemas: this.sistemas,
+      idSistema: this.idSistema
     };
 
     const contenido = JSON.stringify(datos, null, 2);
@@ -713,10 +729,12 @@ export class SimuladorComponent implements OnInit {
 
   guardarGrid(){
     localStorage.setItem('datosGrid', JSON.stringify(this.datosGrid));
+    localStorage.setItem('idElemento', JSON.stringify(this.idElemento));
   }
 
   guardarSistemas(){
     localStorage.setItem('datosSistemas', JSON.stringify(this.sistemas));
+    localStorage.setItem('idSistema', JSON.stringify(this.idSistema));
   }
 
 // -------------------------------- OTRAS FUNCIONES  ----------------------------
