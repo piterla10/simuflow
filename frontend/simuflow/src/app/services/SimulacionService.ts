@@ -5,7 +5,8 @@ import { BehaviorSubject, Subject } from 'rxjs';
   providedIn: 'root'
 })
 export class SimulacionService {
-  // tipo de observable que guarda el ultimo valor que se le ha pasado:
+  // Esto se cambió a observable normal debido a que al crear un sistema nuevo 
+  // y acceder al simulador se le pasaba el último estado de cargarDatos$
   private cargarDatos = new BehaviorSubject<any>(null);
   cargarDatos$ = this.cargarDatos.asObservable();
 

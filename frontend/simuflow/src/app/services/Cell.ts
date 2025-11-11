@@ -18,7 +18,6 @@ interface Generador extends BaseElement {
 
   // esto representará también el color, ya que lo que hace cambiarlo es cambiar la imagen
   imagen: string; 
-  //peligro: Array<number> | null;
 }
 
 interface Deposito extends BaseElement {
@@ -28,16 +27,12 @@ interface Deposito extends BaseElement {
   capacidad: number;
   alturaActual: number;
   imagen: string;
-  peligro: Array<number> | null;
 }
 
 interface ZonaConsumo extends BaseElement {
   tipo: 'consumo';
-  // demanda: number; Esto habría que ver como hacerlo para relacionarlo con peligro
-  
   imagen: string;
   datosSimulacion: Array<number>;
-  // peligro: Array<number> | null;
 }
 
 interface Tuberia extends BaseElement {
@@ -47,8 +42,6 @@ interface Tuberia extends BaseElement {
   presionActual: number; // esto imagino que habrá que cambiarlo en el caso de que la presión 
                          // se asigne automaticamente dependiendo del tanque y tal
   imagen: string;
-  // flujoAgua: CellPosition;
-  peligro: Array<number> | null;
 }
 
 

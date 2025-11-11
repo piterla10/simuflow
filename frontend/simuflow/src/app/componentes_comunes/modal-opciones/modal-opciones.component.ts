@@ -45,7 +45,7 @@ export class ModalOpcionesComponent {
         const contenido = e.target?.result as string;
         const datos = JSON.parse(contenido);
 
-        if (!datos.info || !datos.grid) {
+        if (!datos.info || !datos.grid || !datos.sistemas) {
           this.mostrarErrorTemporal();
           input.value= '';
           return;
@@ -70,6 +70,7 @@ export class ModalOpcionesComponent {
     localStorage.clear();
     this.cerrarModal();
     this.router.navigate(['/']);
+    this.simulacionService.cargar(null);
   }
 
   mostrarErrorTemporal() {

@@ -42,7 +42,7 @@ export class CargarComponent {
         const contenido = e.target?.result as string;
         const datos = JSON.parse(contenido);
 
-        if (!datos.info || !datos.grid) {
+        if (!datos.info || !datos.grid || !datos.sistemas) {
           this.mostrarErrorTemporal(2);
           return;
         } 

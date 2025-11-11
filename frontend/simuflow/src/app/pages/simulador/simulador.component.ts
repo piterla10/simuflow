@@ -96,6 +96,9 @@ export class SimuladorComponent implements OnInit {
     }else{
       this.idSistema = 1;
     }
+    this.revincularSistemas();
+
+
 
     // guardamos la suscripción en la variable y le asignamos que llame a 
     // guardarDatosSimulación() cuando se haga .next() en el service
@@ -116,6 +119,9 @@ export class SimuladorComponent implements OnInit {
         // guardamos en el localstorage los datos nuevos
         this.guardarGrid();
         this.guardarSistemas();
+
+        this.revincularSistemas();
+
         localStorage.setItem('infoGrid', JSON.stringify(this.info));
       }
     })
@@ -295,6 +301,13 @@ export class SimuladorComponent implements OnInit {
         }else{
           this.desasignarTodo(cell);
         }
+      }else{
+        this.borrarSistema(this.celdaSeleccionada);
+        if(cell.content?.tipo === 'tuberia'){
+          this.borrarSistema(cell);
+        }else{
+          this.desasignarTodo(cell);
+        }
       }
 
       const aux = this.celdaSeleccionada.content;
@@ -310,6 +323,7 @@ export class SimuladorComponent implements OnInit {
 
     // comprobamos el estado de los sistemas actual
     this.estadoSistemas();
+    console.log(this.sistemas);
 
     // guardamos en localstorage
     this.guardarGrid();
@@ -324,7 +338,6 @@ export class SimuladorComponent implements OnInit {
   lapiz(cell:Cell){
     // si la celda no tiene un elemento ya
     if(!cell.content){
-      
       // creamos el contenido a introducir en la celda
       let contenido: CellElement;
       switch(this.elemento){
@@ -335,7 +348,6 @@ export class SimuladorComponent implements OnInit {
             imagen: 'assets/elementos/consumo_blanco.png',
             datosSimulacion: [0],
             sistema: []
-            // peligro: null
           };
         break;
       case 'deposito':
@@ -347,7 +359,6 @@ export class SimuladorComponent implements OnInit {
             capacidad: 5,
             alturaMax: 2.5,
             imagen: 'assets/elementos/deposito_blanco_4.png',
-            peligro: null,
             sistema: []
           };
         break;
@@ -359,7 +370,6 @@ export class SimuladorComponent implements OnInit {
             cantidadMax: 30,
             imagen: 'assets/elementos/desaladora_blanco.png',
             sistema: []
-            // peligro: null
           };
         break;
       case 'tuberia':
@@ -370,7 +380,6 @@ export class SimuladorComponent implements OnInit {
             presionMin: 1,
             presionActual: 5,
             imagen: 'assets/elementos/tuberia_blanco.png',
-            peligro: null,
             sistema: []
           };
         break;
@@ -486,6 +495,8 @@ export class SimuladorComponent implements OnInit {
         const sistemaId = cell.content!.sistema[0].id;
         // una vez lo tenemos buscamos el sistema en el array de sistemas para hacer las comprobaciones
         const sistema = this.sistemas.find(s => s.id === sistemaId);
+        // esto es solo por seguridad 
+        if(!sistema) continue;
 
         // se comprueba si el sistema es válido
         if(auxGeneradores.length > 0 && auxDepositos.length > 0 && auxAreas.length > 0){
@@ -534,7 +545,7 @@ export class SimuladorComponent implements OnInit {
           this.desasignarSistemaElemento([cell], sistema!.id);
 
           // se elimina el sistema del array de sistemas
-          this.sistemas.filter(s => s.id !== sistema!.id)
+          this.sistemas = this.sistemas.filter(s => s.id !== sistema!.id);
         }
       }else{
         // si no pertenece a un sistema, comprueba si sería válido y lo crearía en caso de que así sea,
@@ -621,32 +632,34 @@ export class SimuladorComponent implements OnInit {
   // función para borrar un sistema en caso de que el elemento que se borre sea una tuberia
   borrarSistema(cell: Cell){
     // si pertenece a un sistema
-      if(cell.content!.sistema.length === 1){
-        // comprobamos cual es el id del sistema al que queremos acceder viendo el sistema al que 
-        // pertenece la tubería
-        const sistemaId = cell.content!.sistema[0].id;
-        // una vez lo tenemos buscamos el sistema en el array de sistemas para hacer las comprobaciones
-        const sistema = this.sistemas.find(s => s.id === sistemaId);
-    
-        // se elimina el sistema de todos los elementos, la tubería no hace falta porque se va a 
-        // borrar el elemento entero, así que lo mismo da que tenga un sistema u otro
-        this.desasignarSistemaElemento(sistema!.depositos, sistema!.id);
-        this.desasignarSistemaElemento(sistema!.generadores, sistema!.id);
-        this.desasignarSistemaElemento(sistema!.consumo, sistema!.id);
-    
-        // se elimina el sistema del array de sistemas
-        this.sistemas.filter(s => s.id !== sistema!.id);
-      }
+    if(cell.content!.sistema.length === 1){
+      // comprobamos cual es el id del sistema al que queremos acceder viendo el sistema al que 
+      // pertenece la tubería
+      const sistemaId = cell.content!.sistema[0].id;
+      // una vez lo tenemos buscamos el sistema en el array de sistemas para hacer las comprobaciones
+      const sistema = this.sistemas.find(s => s.id === sistemaId);
+  
+      // se elimina el sistema de todos los elementos, la tubería no hace falta porque se va a 
+      // borrar el elemento entero, así que lo mismo da que tenga un sistema u otro
+      this.desasignarSistemaElemento(sistema!.depositos, sistema!.id);
+      this.desasignarSistemaElemento(sistema!.generadores, sistema!.id);
+      this.desasignarSistemaElemento(sistema!.consumo, sistema!.id);
+      // se borra también en el caso de que se llame a la función desde mover
+      this.desasignarSistemaElemento([sistema!.tuberia], sistema!.id);
+  
+      // se elimina el sistema del array de sistemas
+      this.sistemas = this.sistemas.filter(s => s.id !== sistema!.id);
+    }
   }
 
   // función que se llama desde el html para indicar el numero de sistema al que pertenece el elemento
   infoSistema(cell: Cell): number[]{
-  if (!cell.content?.sistema?.length) return [];
+    if (!cell.content?.sistema?.length) return [];
 
-  // ordenamos por id y los devolvemos
-  return cell.content.sistema
-    .map(s => s.id)
-    .sort((a, b) => a - b);
+    // ordenamos por id y los devolvemos
+    return cell.content.sistema
+      .map(s => s.id)
+      .sort((a, b) => a - b);
   }
 
   // función auxiliar que se llama cuando se mueve o elimina un objeto que sirve para eliminar el sistema 
@@ -725,7 +738,7 @@ export class SimuladorComponent implements OnInit {
     }
   }
 
-// -------------------------------- FUNCION PARA EL GUARDADO EN LOCALSTORAGE  ----------------------------
+// -------------------------------- FUNCIONES PARA EL GUARDADO EN LOCALSTORAGE  ----------------------------
 
   guardarGrid(){
     localStorage.setItem('datosGrid', JSON.stringify(this.datosGrid));
@@ -752,5 +765,25 @@ export class SimuladorComponent implements OnInit {
     return this.datosGrid.find(c => c.fila === fila && c.columna === columna) || null;
   }
 
+  private revincularSistemas(){
+    for (const sistema of this.sistemas) {
+      sistema.depositos = sistema.depositos.map(dep =>
+          this.getCell(dep.fila, dep.columna)!
+      );
+
+      sistema.generadores = sistema.generadores.map(gen =>
+          this.getCell(gen.fila, gen.columna)!
+      );
+
+      sistema.consumo = sistema.consumo.map(are =>
+          this.getCell(are.fila, are.columna)!
+      );
+
+      sistema.tuberia = this.getCell(
+          sistema.tuberia.fila,
+          sistema.tuberia.columna
+      )!;
+    }
+  }
 }
 
