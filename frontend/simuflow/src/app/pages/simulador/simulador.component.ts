@@ -1,6 +1,6 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { NavbarComponent } from '../../componentes_comunes/navbar/navbar.component';
-import { Cell, CellElement } from '../../services/Cell';
+import { Cell, CellElement, Deposito } from '../../services/Cell';
 import { CommonModule } from '@angular/common';
 import { SimulacionService } from '../../services/SimulacionService';
 import { Subscription } from 'rxjs';
@@ -47,11 +47,20 @@ export class SimuladorComponent implements OnInit {
   private info: any;
   public datosGrid: Cell[] = [];
 
-
   // para cambiar las herramientas seleccionadas
   public modoActivo: 'edicion' | 'simulacion' = 'edicion';
   public herramientaEdicion: Herramienta = 'seleccionar'
   public elemento: Elemento = 'generador';
+
+  // para controlar la simulación
+  public timeoutID: any;
+  public timerActive: boolean = false;
+  public tiempoCiclo: number = 1000; // ms
+  public tiempoTranscurrido: number = 60000;
+  public index: number = 0;
+  // variable que controla que se pueda seguir ejecutando la simulación porque las 
+  // zonas de consumo aun tienen valores
+  public valido: boolean = true;
 
   // variable para controlar el modal activo
   private modalActual: string | null = null;
@@ -60,45 +69,8 @@ export class SimuladorComponent implements OnInit {
   public sistemas: Sistema[] = [];
 
   ngOnInit(){
-    // cargamos los datos del sistema de localstorage
-    const infoJSON = localStorage.getItem('infoGrid');
-    if(infoJSON){
-      this.info = JSON.parse(infoJSON);
-      this.filas = this.info.filas;
-      this.columnas = this.info.columnas;
-    }
-
-    const datosGridJSON = localStorage.getItem('datosGrid');
-    if(datosGridJSON) {
-      this.datosGrid = JSON.parse(datosGridJSON);
-      // si no tenemos en localstorage datosGrid
-    } else {
-      this.createGrid();
-      // guardo por primera vez en localStorage
-      this.guardarGrid();
-    }
-    
-    const idElementoJSON = localStorage.getItem('idElemento');
-    if(idElementoJSON){
-      this.idElemento = JSON.parse(idElementoJSON);
-    }else{
-      this.idElemento = 0;
-    }
-    
-    const sistemasJSON = localStorage.getItem('datosSistemas');
-    if(sistemasJSON){
-      this.sistemas = JSON.parse(sistemasJSON);
-    }
-    
-    const idSistemaJSON = localStorage.getItem('idSistema');
-    if(idSistemaJSON){
-      this.idSistema = JSON.parse(idSistemaJSON);
-    }else{
-      this.idSistema = 1;
-    }
-    this.revincularSistemas();
-
-
+    // cargamos los datos de localstorage si los hay
+    this.cargarDatosLocalStorage();
 
     // guardamos la suscripción en la variable y le asignamos que llame a 
     // guardarDatosSimulación() cuando se haga .next() en el service
@@ -106,6 +78,7 @@ export class SimuladorComponent implements OnInit {
       this.guardarDatosSimulacion();
     });
 
+    // cargamos los datos de un archivo cuando se nos pase uno
     this.cargarDatos = this.simulacionService.cargarDatos$.subscribe(datos =>{
       if(datos){
         this.info = datos.info;
@@ -113,8 +86,19 @@ export class SimuladorComponent implements OnInit {
         this.columnas = datos.info.columnas;
         this.datosGrid = datos.grid;
         this.idElemento = datos.idElemento;
-        this.sistemas = datos.sistemas;
         this.idSistema = datos.idSistema;
+        
+        this.sistemas = datos.sistemas.map((d: any) => {
+          const sistema = new Sistema(
+            d.id,
+            d.tuberia,      // temporal, será revinculado
+            d.depositos,    // temporal
+            d.generadores,  // temporal
+            d.consumo       // temporal
+          );
+          sistema.valido = d.valido ?? true;
+          return sistema;
+        });
 
         // guardamos en el localstorage los datos nuevos
         this.guardarGrid();
@@ -138,13 +122,14 @@ export class SimuladorComponent implements OnInit {
   // Función para cambiar de modo
   setModo(modo: 'edicion' | 'simulacion'){
     this.modoActivo = modo;
-    if(modo === 'simulacion'){
-      this.celdaSeleccionada = null;
-
-      // cerramos los modales que pudieran estar abiertos
-      if(this.modalActual){
-        this.cerrarModales(this.modalActual);
-      }
+    
+    // cerramos los modales que pudieran estar abiertos
+    if(this.modalActual){
+      this.cerrarModales(this.modalActual);
+    }
+    this.celdaSeleccionada = null;
+    if(modo === 'simulacion'){  
+      // de momento esto lo dejamos vacío 
     }
     if(modo === 'edicion'){
       this.herramientaEdicion = 'seleccionar';
@@ -162,6 +147,7 @@ export class SimuladorComponent implements OnInit {
     this.celdaSeleccionada && (this.celdaSeleccionada = null);
 
     switch(herramienta){
+      // ++++++++++++++++++++++  MODO EDICIÓN  ++++++++++++++++++++++
       case 'seleccionar':
         this.herramientaEdicion = herramienta;
         break;
@@ -177,6 +163,31 @@ export class SimuladorComponent implements OnInit {
         break;
       case 'basura':
         this.abrirModales('basura');
+        break;
+      // ++++++++++++++++++++++  MODO SIMULACIÓN  ++++++++++++++++++++++
+      case 'stepBack':
+        // veremos esta wea
+        break;
+      case 'play':
+        // si está en marcha
+        if(this.timerActive){
+          this.pause();
+        }// si está pausado
+        else{
+          this.play();
+        }
+        break;
+      case 'stop':
+        // paramos la simulación y reiniciamos todos sus valores
+        this.stop();
+        break;
+      case 'step':
+        // si el timer está parado entonces que le deje ejecutar el siguiente paso
+        if(!this.timerActive)
+          this.step();
+        break;
+      case 'reloj':
+        
         break;
     }
   }
@@ -251,9 +262,10 @@ export class SimuladorComponent implements OnInit {
           break;
       }
     }else{
-      // en este caso se seleccionaría el elemento y se podrían ver sus
-      // detalles con el modal correspondiente, quizá capando la opción
-      // de editar sus datos, con otro modal o modificando el que exista
+      // cuando esté parada la simulación que pueda seleccionar los atributos
+      if(!this.timerActive){
+        this.seleccionar(cell);
+      }
     }
   }
 
@@ -267,9 +279,12 @@ export class SimuladorComponent implements OnInit {
       this.celdaSeleccionada = cell;
       this.abrirModales('elementoDetalles');
     }
-    
-    // guardamos en localstorage
-    this.guardarGrid();
+
+// esto es para tener en localstorage los datos de los elementos antes de la simulación
+    if(this.modoActivo !== 'simulacion'){
+      // guardamos en localstorage
+      this.guardarGrid();
+    }
   }
 
   // para mover el contenido de una celda a otra
@@ -323,7 +338,6 @@ export class SimuladorComponent implements OnInit {
 
     // comprobamos el estado de los sistemas actual
     this.estadoSistemas();
-    console.log(this.sistemas);
 
     // guardamos en localstorage
     this.guardarGrid();
@@ -347,6 +361,7 @@ export class SimuladorComponent implements OnInit {
             tipo: 'consumo',
             imagen: 'assets/elementos/consumo_blanco.png',
             datosSimulacion: [0],
+            consumoMaximo: 100,
             sistema: []
           };
         break;
@@ -355,12 +370,14 @@ export class SimuladorComponent implements OnInit {
             id: this.generarId(),
             tipo: 'deposito', 
             solera: 1,
-            alturaActual: 1,
-            capacidad: 5,
-            alturaMax: 2.5,
+            alturaActual: 2,
+            capacidad: 100,
+            alturaMax: 4,
             imagen: 'assets/elementos/deposito_blanco_4.png',
+            volumenxPct: 100 * 0.01,
+            pctActual: 2 / 4,
             sistema: []
-          };
+        };
         break;
       case 'generador':
           contenido = {
@@ -434,11 +451,12 @@ export class SimuladorComponent implements OnInit {
           return `${elemento.produccion * 100}%`;
       case 'deposito':
         // altura del agua actual (nivel del agua en metros)
-          return `${elemento.alturaActual}(m)`;
+          return `${elemento.alturaActual}(m)
+                  ${elemento.pctActual * 100}%`;
       case 'consumo':
         // consumo actual
         // habrá que arreglar esto cuando nos metamos en el tema simulación
-          return `${elemento.datosSimulacion.join(', ')}`;
+          return `${elemento.datosSimulacion[this.index] || -1}`;
       case 'tuberia':
         // presión actual
           return `${elemento.presionActual}`;
@@ -551,14 +569,15 @@ export class SimuladorComponent implements OnInit {
         // si no pertenece a un sistema, comprueba si sería válido y lo crearía en caso de que así sea,
         // si no es válido simplemente no se crearía nada
         if (auxGeneradores.length > 0 && auxDepositos.length > 0 && auxAreas.length > 0) {
-          let sistemaNuevo = {
-            id: this.idSistema,
-            tuberia: cell,
-            depositos: auxDepositos,
-            generadores: auxGeneradores,
-            consumo: auxAreas
-          }
-  
+          // creamos una instancia de la clase Sistema y rellenamos sus parámetros
+          let sistemaNuevo = new Sistema(
+            this.idSistema,
+            cell,
+            auxDepositos,
+            auxGeneradores,
+            auxAreas
+          );
+          
           // añadimos al depósito el sistema al que pertenece
           this.asignarSistemaElemento(auxDepositos);
   
@@ -703,6 +722,59 @@ export class SimuladorComponent implements OnInit {
     
   }
 
+// --------------------------------------- LOGICA DE LA SIMULACIÓN ---------------------------------------
+
+  play(){
+    this.timerActive = true;
+    this.timeoutID = setTimeout(() => {
+      if(this.valido){
+        // ejecutamos los calculos de todos los sistemas para el siguiente paso
+        for(const sistema of this.sistemas){
+          sistema.emitir(this.index, this.tiempoTranscurrido);
+          // comprobamos que se pueden seguir ejecutando 
+          if(!sistema.valido){
+            this.valido = false;
+          }
+        }
+        this.index++;
+        this.play()
+      }
+    }, this.tiempoCiclo);
+  }
+
+  pause(){
+    this.timerActive = false;
+    clearTimeout(this.timeoutID);
+  }
+
+  step(){
+    console.log('valido simulador: ', this.valido);
+    if(this.valido){
+      for(const sistema of this.sistemas){
+        sistema.emitir(this.index, this.tiempoTranscurrido);
+        // comprobamos que se pueden seguir ejecutando 
+        if(!sistema.valido){
+          this.valido = false;
+        }
+      }
+      this.index++;
+    };
+  }
+
+  stop(){
+    // paramos la ejecución del timeout
+    this.timerActive = false;
+    clearTimeout(this.timeoutID);
+
+    // reiniciamos los datos de la simulación
+    this.index = 0;
+    this.valido = true;
+
+    // reiniciamos los valores del grid y del sistema
+    this.cargarDatosLocalStorage();
+  }
+
+
 // --------------------------------------- CREACIÓN DEL GRID Y MANEJO DEL GUARDADO DE DATOS ---------------------------------------
   // función para guardar los datos en la bd
   guardarDatosSimulacion() {
@@ -738,7 +810,7 @@ export class SimuladorComponent implements OnInit {
     }
   }
 
-// -------------------------------- FUNCIONES PARA EL GUARDADO EN LOCALSTORAGE  ----------------------------
+// --------------------------------------- FUNCIONES PARA EL GUARDADO EN LOCALSTORAGE  ---------------------------------------
 
   guardarGrid(){
     localStorage.setItem('datosGrid', JSON.stringify(this.datosGrid));
@@ -750,7 +822,51 @@ export class SimuladorComponent implements OnInit {
     localStorage.setItem('idSistema', JSON.stringify(this.idSistema));
   }
 
-// -------------------------------- OTRAS FUNCIONES  ----------------------------
+  cargarDatosLocalStorage(){
+    // cargamos los datos del sistema de localstorage
+    const infoJSON = localStorage.getItem('infoGrid');
+    if(infoJSON){
+      this.info = JSON.parse(infoJSON);
+      this.filas = this.info.filas;
+      this.columnas = this.info.columnas;
+    }
+
+    const datosGridJSON = localStorage.getItem('datosGrid');
+    if(datosGridJSON) {
+      this.datosGrid = JSON.parse(datosGridJSON);
+      // si no tenemos en localstorage datosGrid
+    } else {
+      this.createGrid();
+      // guardo por primera vez en localStorage
+      this.guardarGrid();
+    }
+    
+    // cargamos los ids
+    this.idElemento = JSON.parse(localStorage.getItem('idElemento') || '0');
+    this.idSistema = JSON.parse(localStorage.getItem('idSistema') || '1');
+    
+    const sistemasJSON = localStorage.getItem('datosSistemas');
+    if(sistemasJSON){
+      const sistemasData = JSON.parse(sistemasJSON);
+      
+      // Reconstruir instancias de Sistema
+      this.sistemas = sistemasData.map((d: any) => {
+        const sistema = new Sistema(
+          d.id,
+          d.tuberia,       // temporal, será revinculado
+          d.depositos,     // temporal, será revinculado
+          d.generadores,   // temporal, será revinculado
+          d.consumo        // temporal, será revinculado
+        );
+        sistema.valido = d.valido ?? true;
+        return sistema;
+      });
+    }
+    
+    this.revincularSistemas();
+  }
+
+// --------------------------------------- OTRAS FUNCIONES  ---------------------------------------
 
 
   private generarId(): number{

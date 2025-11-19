@@ -1,6 +1,6 @@
-<img src="assets/step.png" alt="step atras">
-<!-- aquí habrá que meter la lógica de que cambie de play a pause según se clique -->
-<img src="assets/play.png" alt="play / pause">
-<img src="assets/stop.png" alt="stop">
-<img class="rotar" src="assets/step.png" alt="step adelante">
-<img class="reloj" src="assets/reloj.png" alt="velocidad de simulacion">
+<img class="steps" src="assets/step.png" alt="step atras" (click)="setHerramienta('stepBack')" >
+<img *ngIf="herramientaActiva === 'pause'" src="assets/play.png" alt="play" (click)="setHerramienta('play')">
+<img *ngIf="herramientaActiva === 'play'" src="assets/pause.png" alt="pause" (click)="setHerramienta('pause')">
+<img src="assets/stop.png" alt="stop" (click)="setHerramienta('stop')">
+<img class="rotar steps" src="assets/step.png" alt="step adelante" (click)="setHerramienta('step')">
+<img class="reloj" src="assets/reloj.png" alt="velocidad de simulacion" (click)="setHerramienta('reloj')">

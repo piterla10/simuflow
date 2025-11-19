@@ -9,10 +9,10 @@ interface BaseElement {
 }
 
 // Interfaces específicas para cada tipo de elemento
-interface Generador extends BaseElement {
+export interface Generador extends BaseElement {
   tipo: 'generador';
-  produccion: number;
-  cantidadMax: number; // cantidad maxima que es capaz de generar abierto al maximo
+  produccion: number; // 0-1 fracción de actividad
+  cantidadMax: number; // m³/hora cantidad maxima que es capaz de generar abierto al maximo
   // minimoRango: number; // momento en el que se apagaría el generador cuando genera 
                           // por debajo de este porcentaje. De momento no se tendrá en cuenta
 
@@ -20,27 +20,29 @@ interface Generador extends BaseElement {
   imagen: string; 
 }
 
-interface Deposito extends BaseElement {
+export interface Deposito extends BaseElement {
   tipo: 'deposito';
-  solera: number;
-  alturaMax: number;
-  capacidad: number;
-  alturaActual: number;
+  solera: number; // m
+  alturaMax: number;  // m
+  capacidad: number;  // m³
+  alturaActual: number; // m   laminaAgua
   imagen: string;
+  volumenxPct: number; //
+  pctActual: number; // 0-1
 }
 
-interface ZonaConsumo extends BaseElement {
+export interface ZonaConsumo extends BaseElement {
   tipo: 'consumo';
   imagen: string;
-  datosSimulacion: Array<number>;
+  datosSimulacion: Array<number>; // m³/hora
+  consumoMaximo: number;
 }
 
-interface Tuberia extends BaseElement {
+export interface Tuberia extends BaseElement {
   tipo: 'tuberia';
   presionMax: number;
   presionMin: number; 
-  presionActual: number; // esto imagino que habrá que cambiarlo en el caso de que la presión 
-                         // se asigne automaticamente dependiendo del tanque y tal
+  presionActual: number; // metros de columna de agua (m) | 1bar = 10m aprox
   imagen: string;
 }
 

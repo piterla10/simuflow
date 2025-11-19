@@ -14,7 +14,7 @@
     </article>
     <article>
         <app-herramientas-edicion (herramientaSimulador)="cambioHerramienta($event)" *ngIf="modoActivo === 'edicion'"></app-herramientas-edicion>
-        <app-herramientas-simulacion *ngIf="modoActivo === 'simulacion'"></app-herramientas-simulacion>
+        <app-herramientas-simulacion (herramientaSimulador)="cambioHerramienta($event)" *ngIf="modoActivo === 'simulacion'"></app-herramientas-simulacion>
     </article>
 </section>
 <!-- sección de modales que pueden aparecer dependiendo de donde cliquemos -->

@@ -19,11 +19,12 @@ export class ElementoDetallesComponent implements OnChanges{
 
   // variables a rellenar en caso de que la celda contenga una zona de consumo
   datosSim = "0";
+  consumoMaximo: number = 100;
 
   // variables a rellenar en caso de que la celda contenga un depósito
   solera: number = 1;
   alturaMax: number = 2.5;
-  capacidad: number = 5;
+  capacidad: number = 100;
   alturaActual: number = 1;
 
   // variables a rellenar en caso de que la celda contenga un generador
@@ -61,6 +62,7 @@ export class ElementoDetallesComponent implements OnChanges{
     
     }else if(this.celda.content?.tipo === "consumo"){
       this.datosSim = this.celda.content!.datosSimulacion.join(', ');
+      this.consumoMaximo = this.celda.content!.consumoMaximo;
     }
 
   }
@@ -126,6 +128,12 @@ export class ElementoDetallesComponent implements OnChanges{
     }
   }
 
+  procesarConsumoMaximo(){
+    if('consumoMaximo' in this.celda.content!){
+      this.celda.content!.consumoMaximo = this.consumoMaximo;
+    }
+  }
+
   // funciones para guardar los datos cambiados de los elementos en tiempo real si es un depósito
   procesarSolera(){
     if('solera' in this.celda.content!)
@@ -133,18 +141,25 @@ export class ElementoDetallesComponent implements OnChanges{
   }
 
   procesarAlturaMax(){
-    if('alturaMax' in this.celda.content!)
+    if('alturaMax' in this.celda.content!){
       this.celda.content!.alturaMax = this.alturaMax;
+      this.celda.content!.pctActual = this.celda.content!.alturaActual / this.alturaMax;
+    }
+
   }
 
   procesarCapacidad(){
-    if('capacidad' in this.celda.content!)
+    if('capacidad' in this.celda.content!){
       this.celda.content!.capacidad = this.capacidad;
+      this.celda.content!.volumenxPct = this.capacidad * 0.01;
+    }
   }
 
   procesarAlturaActual(){
-    if('alturaActual' in this.celda.content!)
+    if('alturaActual' in this.celda.content!){
       this.celda.content!.alturaActual = this.alturaActual;
+      this.celda.content!.pctActual = this.alturaActual / this.celda.content!.alturaMax;
+    }
   }
 
   // funciones para guardar los datos cambiados de los elementos en tiempo real si es un generador

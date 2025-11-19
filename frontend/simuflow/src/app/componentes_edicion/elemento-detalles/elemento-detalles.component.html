@@ -5,6 +5,16 @@
       <!-- ------------------------------ GENERADOR ------------------------------ -->
       <article *ngSwitchCase="'generador'">
         <span>
+          <h3>Producción (0, 1)</h3>
+          <!-- El ngModel hace binding bidireccional entre el texto del input y la variable produccion, cuando una cambie, cambiará la otra -->
+          <input type="number" class="datosSim" [(ngModel)]="produccion" (input)="procesarProduccion()">
+        </span>
+        <span>
+          <h3>cantidad Maxima</h3>
+          <!-- El ngModel hace binding bidireccional entre el texto del input y la variable produccion, cuando una cambie, cambiará la otra -->
+          <input type="number" class="datosSim" [(ngModel)]="cantidadMax" (input)="procesarCantidadMax()">
+        </span>  
+        <span>
           <h3>Color del generador</h3>
           <div class="bloque">
             <div
@@ -16,11 +26,6 @@
             ></div>
           </div>
         </span>
-        <span>
-          <h3>Producción (0, 1)</h3>
-          <!-- El ngModel hace binding bidireccional entre el texto del input y la variable produccion, cuando una cambie, cambiará la otra -->
-          <input type="number" class="datosSim" [(ngModel)]="produccion" (input)="procesarProduccion()">
-        </span> 
       </article>
       <!-- ------------------------------ DEPÓSITO ------------------------------ -->
       <article *ngSwitchCase="'deposito'">
@@ -55,23 +60,27 @@
       </article>
       <!-- ------------------------------ CONSUMO ------------------------------ -->
       <article *ngSwitchCase="'consumo'">
-         <span>
-          <h3>Color del área de consumo</h3>
-          <div class="bloque">
-            <div
-              class="colores"
-              *ngFor="let c of colores"
-              [ngStyle]="{ 'background-color': c.color }"
-              [class.activo]="colorCelda === c.id"
-              (click)="colorSeleccionado(c.id)"
-            ></div>
-          </div>
-        </span>
         <span>
           <h3>Datos de la simulación</h3>
           <!-- El ngModel hace binding bidireccional entre el texto del input y la variable datosSim, cuando una cambie, cambiará la otra -->
           <input class="datosSim" type="text" [(ngModel)]="datosSim" (input)="procesarDatosSimulacion()" placeholder="Ej: 3, 5, 10">
+        </span>
+        <span>
+          <h3>Consumo máximo</h3>
+          <input type="number" class="datosSim" [(ngModel)]="consumoMaximo" (input)="procesarConsumoMaximo()">
         </span> 
+        <span>
+         <h3>Color del área de consumo</h3>
+         <div class="bloque">
+           <div
+             class="colores"
+             *ngFor="let c of colores"
+             [ngStyle]="{ 'background-color': c.color }"
+             [class.activo]="colorCelda === c.id"
+             (click)="colorSeleccionado(c.id)"
+           ></div>
+         </div>
+       </span>
       </article>
       <!-- ------------------------------ TUBERÍA ------------------------------ -->
       <article *ngSwitchCase="'tuberia'">
