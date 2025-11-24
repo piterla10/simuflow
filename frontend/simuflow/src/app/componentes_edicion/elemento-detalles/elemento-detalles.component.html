@@ -10,9 +10,17 @@
           <input type="number" class="datosSim" [(ngModel)]="produccion" (input)="procesarProduccion()">
         </span>
         <span>
-          <h3>cantidad Maxima</h3>
+          <h3>Cantidad Máxima</h3>
           <!-- El ngModel hace binding bidireccional entre el texto del input y la variable produccion, cuando una cambie, cambiará la otra -->
           <input type="number" class="datosSim" [(ngModel)]="cantidadMax" (input)="procesarCantidadMax()">
+        </span>
+        <span *ngIf="celda.content?.sistema && celda.content!.sistema.length > 1" class="reparticion">
+          <h3>Repartición entre sistemas</h3>
+          <div *ngFor="let sis of celda.content?.sistema; let i = index" class="reparticion-item">
+            <label>Sistema {{ sis.id }}</label>
+            <input type="number" class="datosPorc" [(ngModel)]="celda.content!.sistema[i].porcentaje" (input)="procesarReparto()">
+          </div>
+          <p class="advertencia" *ngIf="!repartoValido"> La suma debe ser 100%. </p>
         </span>  
         <span>
           <h3>Color del generador</h3>
@@ -68,7 +76,15 @@
         <span>
           <h3>Consumo máximo</h3>
           <input type="number" class="datosSim" [(ngModel)]="consumoMaximo" (input)="procesarConsumoMaximo()">
-        </span> 
+        </span>
+        <span *ngIf="celda.content?.sistema && celda.content!.sistema.length > 1" class="reparticion">
+          <h3>Repartición entre sistemas</h3>
+          <div *ngFor="let sis of celda.content?.sistema; let i = index" class="reparticion-item">
+            <label>Sistema {{ sis.id }}</label>
+            <input type="number" class="datosPorc" [(ngModel)]="celda.content!.sistema[i].porcentaje" (input)="procesarReparto()">
+          </div>
+          <p class="advertencia" *ngIf="!repartoValido"> La suma debe ser 100%. </p>
+        </span>
         <span>
          <h3>Color del área de consumo</h3>
          <div class="bloque">

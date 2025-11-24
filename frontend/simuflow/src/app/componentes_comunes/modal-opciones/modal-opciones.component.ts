@@ -1,17 +1,19 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Output } from '@angular/core';
+import { Component, EventEmitter, Output, ViewChild } from '@angular/core';
 import { Router } from '@angular/router';
 import { SimulacionService } from '../../services/SimulacionService';
+import { ConstantesComponent } from "../constantes/constantes.component";
 
 @Component({
   selector: 'app-modal-opciones',
-  imports: [CommonModule],
+  imports: [CommonModule, ConstantesComponent],
   templateUrl: './modal-opciones.component.html',
   styleUrl: './modal-opciones.component.scss'
 })
 export class ModalOpcionesComponent {
   constructor( private router: Router, private simulacionService: SimulacionService) {  }
-  @Output() cargar = new EventEmitter<void>();
+  @ViewChild('constantes') modal!: ConstantesComponent;
+
   public errorArchivoVacio = false;
   public visible = false;
 
@@ -21,6 +23,7 @@ export class ModalOpcionesComponent {
 
   cerrarModal() {
     this.visible = false;
+    this.cerrarConstantes();
   }
 
   guardarSimulacion() {
@@ -81,4 +84,11 @@ export class ModalOpcionesComponent {
     }, 3000); // coincide con los 3s del fade
   }
 
+  abrirConstantes(){
+    this.modal.abrirModal();
+  }
+
+  cerrarConstantes(){
+    this.modal.cerrarModal();
+  }
 }

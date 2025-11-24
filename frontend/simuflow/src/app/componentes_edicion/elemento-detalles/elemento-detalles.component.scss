@@ -100,3 +100,42 @@ section article h3{
   border: 1px solid white;
   padding: 3px 0;
 }
+
+.datosPorc{
+  font-size: 1.3rem;
+  width: 85%;
+  text-align: center;
+  color: var(--color-fondo);
+  background-color: var(--blanco1);
+  border: 1px solid white;
+  padding: 3px 0;
+}
+
+.reparticion{
+  margin: 0;
+  gap: 0.4rem;
+  margin-bottom: 1.3rem;
+}
+
+.reparticion-item{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.reparticion-item label{
+  font-size: 1rem;
+}
+
+.reparticion-item input{
+  width: 80px;
+}
+
+.advertencia{
+  margin: 0;
+  padding: 3px;
+  color: var(--rojo);
+  font-size: 14px;
+  font-size: 1.3rem;
+}

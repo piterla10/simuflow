@@ -24,7 +24,6 @@ export class HerramientasSimulacionComponent {
   }
 
   mandarHerramienta(herramienta: Herramienta){
-    console.log(herramienta);
     this.herramientaSimulador.emit(herramienta);
   }
 }

@@ -13,9 +13,10 @@ export class ElementoDetallesComponent implements OnChanges{
   @Input() celda!: Cell;
   @Output() actualizar = new EventEmitter<Cell>();
 
-  // para manejar la visibilidad del modal y los colores de los elementos
+  // para manejar la visibilidad del modal, los colores de los elementos y sus porcentajes
   visible = false;
   colorCelda = 1;
+  repartoValido: boolean = true;
 
   // variables a rellenar en caso de que la celda contenga una zona de consumo
   datosSim = "0";
@@ -116,6 +117,24 @@ export class ElementoDetallesComponent implements OnChanges{
     // actualizamos el valor de colorCelda para el css y tener referencia para un posible futuro cambio
     this.colorCelda = color;
   }
+
+  // función para procesar los porcentajes de los sistemas
+  procesarReparto() {
+  if (!this.celda.content || !this.celda.content.sistema) return;
+
+  // El usuario puede escribir números raros → limpiamos
+  this.celda.content.sistema.forEach(s => {
+    if (isNaN(s.porcentaje) || s.porcentaje < 0) {
+      s.porcentaje = 0;
+    }
+  });
+
+  // validamos suma
+  const suma = this.celda.content.sistema
+    .reduce((acc, s) => acc + s.porcentaje, 0);
+
+  this.repartoValido = (suma === 100);
+}
 
   // función para guardar los números que servirán como datos de simulación 
   // mientras no esté funcionando el agente controlador

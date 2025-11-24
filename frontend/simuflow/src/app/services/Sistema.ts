@@ -19,13 +19,6 @@ export class Sistema {
         // otra variable que se pilla del simulador para que sea configurable 
     miliSegundosPorHora = 60 * 60 * 1000;
 
-    // Parametros para simular la evolución de la presión
-        // esto es lo máximo que puede llegar a bajar la presión por consumo
-    constantePorConsumo = 15;
-        // maximo que puede subir la presión por bombeo
-    constantePorBombeo = 15;
-
-
     // Parámetro para el control de la simulación
     valido: boolean = true;
 
@@ -35,7 +28,7 @@ export class Sistema {
     
 
 // --------------------------- FUNCIONES PARA LA SIMULACIÓN ---------------------------
-    emitir(paso: number, tiempoCiclo: number){
+    emitir(paso: number, tiempoTranscurrido: number, produccion: {id: number, valor: number[]}[], constPorCons: number, constPorBomb: number){
         // esta comprobación de los pasos servirá para indicarle al simulador que en el siguiente paso
         // este sistema no tendrá más valores para simular, de forma que se ejecute una ultima vez 
         // antes de el sistema pare la simulación
@@ -45,7 +38,7 @@ export class Sistema {
         })
         // habrá que indicar en el simulador que después de ejecutar los emitir() de los sistemas, 
         // después compruebe la variable valido de cada uno para mirar si se va a poder seguir ejecutando
-        this.calcularFlujos(paso, tiempoCiclo);
+        this.calcularFlujos(paso, tiempoTranscurrido, produccion, constPorCons, constPorBomb);
 
         // codigo de los agentes
 
@@ -54,8 +47,8 @@ export class Sistema {
 
     // función que calcula qué ocurre con el agua producida en cada paso
     // y calcula la presión. (en general actualiza los parámetros del sistema)
-    // tiempoCiclo es la duración del paso en milisegundos, 1 min = 60000 ms
-    calcularFlujos(paso: number, tiempoCiclo: number){
+    // tiempoTranscurrido es la duración del paso en milisegundos, 1 min = 60000 ms
+    calcularFlujos(paso: number, tiempoTranscurrido: number, produccion: {id: number, valor: number[]}[], constPorCons: number, constPorBomb: number){
         // calculamos el agua que ha producido cada generador en este paso, lo ponemos a 0 para que se 
         // recalcule en cada paso
         this.aguaDesdeBomba = 0;
@@ -64,7 +57,8 @@ export class Sistema {
             const generador = gen.content as Generador;
             // este find sirve para encontrar qué porcentaje tiene asignado para este sistema el generador
             const porcentaje = generador.sistema.find(g => g.id === this.id);
-            this.aguaDesdeBomba += generador.produccion * generador.cantidadMax * (porcentaje!.porcentaje / 100);
+            const produccionReal = produccion.find(g => g.id === generador.id);
+            this.aguaDesdeBomba += produccionReal!.valor[paso] * generador.cantidadMax * (porcentaje!.porcentaje / 100);
         });
         
         // calculamos si el agua que ha producido el generador ha sido suficiente para cubrir las necesidades del
@@ -86,17 +80,20 @@ export class Sistema {
             this.aguaDesdeDeposito = consumoInfraestructuras;
             // aguaHaciaDeposito (+WTF) se pone a 0 ya que el depósito no va a recibir agua en este paso
             this.aguaHaciaDeposito = 0;
-        }else{
+        }else if(consumoInfraestructuras < 0){
             // aquí se haría justo lo contrario al caso anterior, -WTF a 0 ya que no va a dar agua en este paso
             this.aguaDesdeDeposito = 0;
             // y +WTF se iguala a la cantidad de agua que le ha sobrado al area de consumo en este paso
             // se pone -consumoInfraestructuras porque cuando sobraba, el dato era -.
             this.aguaHaciaDeposito = -consumoInfraestructuras;
+        }else{
+            this.aguaDesdeDeposito = 0;
+            this.aguaHaciaDeposito = 0;
         }
 
         // este cálculo representa la cantidad de agua correspondiente a un paso, durando el paso 
         // lo que dure el ciclo 
-        let modificarLamina = consumoInfraestructuras / this.miliSegundosPorHora * tiempoCiclo;
+        let modificarLamina = consumoInfraestructuras / this.miliSegundosPorHora * tiempoTranscurrido;
 
         // si solo tenemos un depósito se le resta o suma el agua correspondiente a ese paso según 
         // consumoInfraestructuras sea negativo (recibe el depósito) o positivo (da el depósito)
@@ -106,6 +103,7 @@ export class Sistema {
             const deltaAltura = modificarLamina / area;
             dep.alturaActual -= deltaAltura;
             dep.alturaActual = Math.max(0, Math.min(dep.alturaActual, dep.alturaMax));
+            dep.pctActual = dep.alturaActual / dep.alturaMax;
         }else{
             // hay que sumarle agua a los depósitos
             if(modificarLamina < 0){
@@ -216,10 +214,10 @@ export class Sistema {
         // todos los sistemas, que el simulador recorra los depósitos y guarde los valores de sus láminas
 
         // calculamos la presión
-        this.calculoPresion(paso);
+        this.calculoPresion(paso, produccion, constPorCons, constPorBomb);
     }
 
-    calculoPresion(paso: number){
+    calculoPresion(paso: number, produccion: {id: number, valor: number[]}[], constPorCons: number, constPorBomb: number){
         // calculamos la suma de las alturas de los depositos y la cantidad total de agua que tienen todos
         let alturaDepositos = 0;
         let laminasDepositos = 0;
@@ -234,7 +232,8 @@ export class Sistema {
         this.generadores.forEach(gen =>{
             const generador = gen.content as Generador;
             const porcentaje = generador.sistema.find(g => g.id === this.id);
-            presionBombas += generador.produccion * porcentaje!.porcentaje / 100 * this.constantePorBombeo;
+            const produccionReal = produccion.find(g => g.id === generador.id);
+            presionBombas += produccionReal!.valor[paso] * porcentaje!.porcentaje / 100 * constPorBomb;
         });
 
         // (el mínimo entre la cantidad máx que puede llegar a bajar la presión por consumo
@@ -243,7 +242,7 @@ export class Sistema {
         this.consumo.forEach(con => {
             const consumo = con.content as ZonaConsumo;
             const porcentaje = consumo.sistema.find(g => g.id === this.id);
-            presionConsumo += Math.min(this.constantePorConsumo, this.constantePorConsumo * 
+            presionConsumo += Math.min(constPorCons, constPorCons * 
                             (consumo.datosSimulacion[paso] / consumo.consumoMaximo * porcentaje!.porcentaje / 100));
         });
         
@@ -264,16 +263,3 @@ export class Sistema {
 
 // si tienes un depósito conectado a dos sistemas y se está llenando, ¿se apagarían
 // las bombas de los dos sistemas? 
-
-// quizá habría que hacer una "copia de seguridad" de todos los datos del grid antes de empezar
-// la simulación o los "pasos" para que cuando se vuelva al modo edición se pueda volver a 
-// simular con los parámetros y tal que se tenía antes.
-// Dónde se podría hacer: variable que guarde los datos o en localstorage la ultima versión 
-// de los cambios, de forma que cuando se vuelva al modo edición se vuelva a cargar el sistema
-// cargando las cosas de localstorage en su sitio
-
-// hay que en algún lado tener los factores que alterarán los parámetros de los elementos
-// por un lado el agua que generan las bombas y por otro cuanta es la demanda de las areas de 
-// consumo y una vez se tenga eso se reparte el agua entre los depósitos que hayan disponibles
-// Habría que mirar cómo hacer para que el agua se le de al depósito que tenga menos agua y 
-// posteriormente repartir el agua sobrante en los dos si se da el caso de tener más de uno

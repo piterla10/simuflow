@@ -1,6 +1,6 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { NavbarComponent } from '../../componentes_comunes/navbar/navbar.component';
-import { Cell, CellElement, Deposito } from '../../services/Cell';
+import { Cell, CellElement, Deposito, Generador } from '../../services/Cell';
 import { CommonModule } from '@angular/common';
 import { SimulacionService } from '../../services/SimulacionService';
 import { Subscription } from 'rxjs';
@@ -25,6 +25,7 @@ export class SimuladorComponent implements OnInit {
   @ViewChild('basura') modalBasura!: BasuraComponent;
   @ViewChild('elementoDetalles') modalElementoDetalles!: ElementoDetallesComponent;
   @ViewChild('navbar') modalNavbar!: NavbarComponent;
+  @ViewChild('herrSim') herramientaSim!: HerramientasSimulacionComponent;
 
   constructor(private simulacionService: SimulacionService){}
   
@@ -56,11 +57,21 @@ export class SimuladorComponent implements OnInit {
   public timeoutID: any;
   public timerActive: boolean = false;
   public tiempoCiclo: number = 1000; // ms
-  public tiempoTranscurrido: number = 60000;
+  public tiempoTranscurrido: number = 600000; // 10min en ms
   public index: number = 0;
   // variable que controla que se pueda seguir ejecutando la simulación porque las 
   // zonas de consumo aun tienen valores
   public valido: boolean = true;
+  // Parametros para simular la evolución de la presión
+    // esto es lo máximo que puede llegar a bajar la presión por consumo
+  constantePorConsumo = 15;
+    // maximo que puede subir la presión por bombeo
+  constantePorBombeo = 15;
+
+
+  // arrays para almacenar los valores de las láminas y de producción en la simulacion
+  public produccion: {id: number, valor: number[]}[] = [];
+  public laminas: {id: number, valor: number[]}[] = [];
 
   // variable para controlar el modal activo
   private modalActual: string | null = null;
@@ -106,6 +117,9 @@ export class SimuladorComponent implements OnInit {
 
         this.revincularSistemas();
 
+        // rellenamos los arrays de lamina y producción
+        this.registrarEnArrayCargando();
+
         localStorage.setItem('infoGrid', JSON.stringify(this.info));
       }
     })
@@ -133,6 +147,7 @@ export class SimuladorComponent implements OnInit {
     }
     if(modo === 'edicion'){
       this.herramientaEdicion = 'seleccionar';
+      this.stop();
     }
   }
 
@@ -165,17 +180,11 @@ export class SimuladorComponent implements OnInit {
         this.abrirModales('basura');
         break;
       // ++++++++++++++++++++++  MODO SIMULACIÓN  ++++++++++++++++++++++
-      case 'stepBack':
-        // veremos esta wea
-        break;
       case 'play':
-        // si está en marcha
-        if(this.timerActive){
-          this.pause();
-        }// si está pausado
-        else{
           this.play();
-        }
+        break;
+      case 'pause':
+          this.pause();
         break;
       case 'stop':
         // paramos la simulación y reiniciamos todos sus valores
@@ -208,10 +217,6 @@ export class SimuladorComponent implements OnInit {
       case 'elementoDetalles':
         this.modalElementoDetalles.abrirModal();
         break;
-      case 'navbar':
-        if(this.modalActual && this.modalActual !== 'navbar'){
-          this.cerrarModales(this.modalActual)
-        }
     }
     this.modalActual = nombreModal;
   }
@@ -280,7 +285,7 @@ export class SimuladorComponent implements OnInit {
       this.abrirModales('elementoDetalles');
     }
 
-// esto es para tener en localstorage los datos de los elementos antes de la simulación
+    // esto es para tener en localstorage los datos de los elementos antes de la simulación
     if(this.modoActivo !== 'simulacion'){
       // guardamos en localstorage
       this.guardarGrid();
@@ -395,7 +400,7 @@ export class SimuladorComponent implements OnInit {
             tipo: 'tuberia',
             presionMax: 10,
             presionMin: 1,
-            presionActual: 5,
+            presionActual: -1,
             imagen: 'assets/elementos/tuberia_blanco.png',
             sistema: []
           };
@@ -435,6 +440,10 @@ export class SimuladorComponent implements OnInit {
       this.datosGrid[i].content = null;
     }
 
+    // vaciamos los arrays de simulación
+    this.laminas = [];
+    this.produccion = [];
+
     // vaciamos el array de sistemas
     this.sistemas = [];
     
@@ -445,21 +454,28 @@ export class SimuladorComponent implements OnInit {
 
   // información que muestra cada elemento a la izquierda
   infoElemento(elemento: CellElement): string{
+    const format = (num: number) => Number(num).toFixed(2);
+
     switch (elemento.tipo) {
       case 'generador':
         // aquí sería la potencia a la que está encendida la bomba
-          return `${elemento.produccion * 100}%`;
+        return `${format(elemento.produccion * 100)}%`;
       case 'deposito':
         // altura del agua actual (nivel del agua en metros)
-          return `${elemento.alturaActual}(m)
-                  ${elemento.pctActual * 100}%`;
+        return `${format(elemento.alturaActual)}(m)
+                ${format(elemento.pctActual * 100)}%`;
       case 'consumo':
         // consumo actual
-        // habrá que arreglar esto cuando nos metamos en el tema simulación
-          return `${elemento.datosSimulacion[this.index] || -1}`;
+        if(elemento.datosSimulacion[this.index] == 0){
+          return '0';
+        }
+        if(!elemento.datosSimulacion[this.index]){
+          return '-1';
+        }
+          return `${format(elemento.datosSimulacion[this.index])}`;
       case 'tuberia':
         // presión actual
-          return `${elemento.presionActual}`;
+        return `${format(elemento.presionActual)}`;
     }
   }
 
@@ -548,6 +564,10 @@ export class SimuladorComponent implements OnInit {
           this.asignarSistemaElemento(generadoresCambiados, sistemaId);
           this.asignarSistemaElemento(areasCambiadas, sistemaId);
 
+
+          // registramos los elementos en los arrays de la simulación
+          this.registrarEnArray(auxGeneradores, auxDepositos);
+
           
           // añadimos los elementos nuevos al sistema
           sistema!.depositos = auxDepositos;
@@ -589,6 +609,10 @@ export class SimuladorComponent implements OnInit {
 
           // añadimos a la tubería el sistema al que pertenece
           this.asignarSistemaElemento([cell]);
+
+
+          // registramos los elementos en los arrays de la simulación
+          this.registrarEnArray(auxGeneradores, auxDepositos);
   
           this.sistemas.push(sistemaNuevo);
           this.generarIdSistema();
@@ -627,6 +651,15 @@ export class SimuladorComponent implements OnInit {
         for(const aux of el.content?.sistema!){
         // y actualizamos su porcentaje dividiendolo entre el número nuevo de sistemas a los que pertenece
           aux.porcentaje = 100 / (el.content?.sistema.length! - 1);
+        }
+      }else{
+        // eliminamos los elementos del array donde estén si se da el caso de que solo pertenecen a un sistema
+        if (el.content?.tipo === 'generador') {
+          this.produccion = this.produccion.filter(p => p.id !== el.content!.id);
+        }
+
+        if (el.content?.tipo === 'deposito') {
+          this.laminas = this.laminas.filter(l => l.id !== el.content!.id);
         }
       }
       // borramos el sistema al que pertenecía anteriormente
@@ -702,12 +735,22 @@ export class SimuladorComponent implements OnInit {
           sistema.depositos = sistema.depositos.filter(
             d => d.content?.id !== cell.content!.id
           );
+
+      // si los elementos solo pertenecían a un sistema y se borra desde aquí, también los sacamos de los arrays
+          if(cell.content?.sistema.length ==  1){
+            this.laminas = this.laminas.filter(l => l.id !== cell.content!.id);
+          }
           break;
 
         case 'generador':
           sistema.generadores = sistema.generadores.filter(
             g => g.content?.id !== cell.content!.id
           );
+          
+      // si los elementos solo pertenecían a un sistema y se borra desde aquí, también los sacamos de los arrays
+          if(cell.content?.sistema.length ==  1){
+            this.produccion = this.produccion.filter(p => p.id !== cell.content!.id);
+          }
           break;
 
         case 'consumo':
@@ -727,10 +770,14 @@ export class SimuladorComponent implements OnInit {
   play(){
     this.timerActive = true;
     this.timeoutID = setTimeout(() => {
+      // Guardamos los datos actuales correspondientes en los arrays
+      this.guardarDatoDeProduccion();
+      this.guardarDatoDeLamina();
+
       if(this.valido){
         // ejecutamos los calculos de todos los sistemas para el siguiente paso
         for(const sistema of this.sistemas){
-          sistema.emitir(this.index, this.tiempoTranscurrido);
+          sistema.emitir(this.index, this.tiempoTranscurrido, this.produccion, this.constantePorConsumo, this.constantePorBombeo);
           // comprobamos que se pueden seguir ejecutando 
           if(!sistema.valido){
             this.valido = false;
@@ -748,35 +795,131 @@ export class SimuladorComponent implements OnInit {
   }
 
   step(){
-    console.log('valido simulador: ', this.valido);
+    // Guardamos los datos actuales correspondientes en los arrays
+    this.guardarDatoDeProduccion();
+    this.guardarDatoDeLamina();
+
+    // si se puede hacer el step
     if(this.valido){
       for(const sistema of this.sistemas){
-        sistema.emitir(this.index, this.tiempoTranscurrido);
+        sistema.emitir(this.index, this.tiempoTranscurrido, this.produccion, this.constantePorConsumo, this.constantePorBombeo);
         // comprobamos que se pueden seguir ejecutando 
         if(!sistema.valido){
           this.valido = false;
         }
       }
       this.index++;
-    };
+    }
   }
 
   stop(){
     // paramos la ejecución del timeout
     this.timerActive = false;
     clearTimeout(this.timeoutID);
-
+    // cambiamos el icono de pause a play ya que el activo es pause al parar
+    this.herramientaSim.herramientaActiva = 'pause';
     // reiniciamos los datos de la simulación
     this.index = 0;
     this.valido = true;
 
     // reiniciamos los valores del grid y del sistema
     this.cargarDatosLocalStorage();
+    
+    // esto se hace para que funcione correctamente el if de las funciones de abajo
+    for(const dep of this.laminas){
+      dep.valor = [0];
+    }
+    for(const gen of this.produccion){
+      gen.valor = [0];
+    }
+
+    // Guardamos de nuevo en los arrays el primer valor que tenía cada generador y depósito
+    this.guardarDatoDeProduccion();
+    this.guardarDatoDeLamina();
   }
 
+  // stepBack(){}
+
+  registrarEnArray(auxGeneradores: Cell[], auxDepositos: Cell[]){
+    for(const gen of auxGeneradores){
+      const g = gen.content as Generador;
+      if(!this.produccion.some(p => p.id === gen.content!.id)){
+        this.produccion.push({
+          id: gen.content!.id,
+          valor: [g.produccion]
+        });
+      }
+    }
+
+    for (const dep of auxDepositos) {
+      const d = dep.content as Deposito;
+      if (!this.laminas.some(l => l.id === dep.content!.id)) {
+        this.laminas.push({
+          id: dep.content!.id,
+          valor: [d.alturaActual]
+        });
+      }
+    }
+  }
+
+  registrarEnArrayCargando(){
+    // rellenamos los arrays de lamina y producción
+    this.laminas = [];
+    this.produccion = [];
+
+    for (const sistema of this.sistemas) {
+      for (const dep of sistema.depositos) {
+        // Si no está ya añadido
+        const d = dep.content as Deposito;
+        if (!this.laminas.some(l => l.id === dep.content!.id)) {
+          this.laminas.push({ id: dep.content!.id, valor: [d.alturaActual] });
+        }
+      } 
+
+      for (const gen of sistema.generadores) {
+        const g = gen.content as Generador;
+        // Si no está ya añadido
+        if (!this.produccion.some(p => p.id === gen.content!.id)) {
+          this.produccion.push({ id: gen.content!.id, valor: [g.produccion] });
+        }
+      }
+    }
+  }
+
+  guardarDatoDeProduccion(){
+  // Recorremos el array de producción
+    for(const gen of this.produccion){
+      // buscamos el valor de producción que tiene cada generador en el paso actual
+      const g = this.datosGrid.find(d => d.content?.id == gen.id)!.content as Generador;
+      // de forma que si es la primera vez que se hace, que solo se actualice el primer dato de valor
+      if(gen.valor.length - 1  == 0 && this.valido){
+        gen.valor[this.index] = g.produccion;
+      // pero si ya hemos avanzado algún paso en la simulación, que guarde el valor actual en una nueva 
+      // posición, para que tenga tantos valores como pasos se vayan a ejecutar. En el paso 2 habrán 2 valores
+      }else if(gen.valor.length == this.index){
+        gen.valor.push(g.produccion);
+      }
+    }
+  }
+
+  guardarDatoDeLamina(){
+  // Recorremos el array de producción
+    for(const dep of this.laminas){
+      // buscamos el valor de producción que tiene cada generador en el paso actual
+      const l = this.datosGrid.find(d => d.content?.id == dep.id)!.content as Deposito;
+      // de forma que si es la primera vez que se hace, que solo se actualice el primer dato de valor
+      if(dep.valor.length - 1  == 0 && this.valido){
+        dep.valor[this.index] = l.alturaActual;
+      // pero si ya hemos avanzado algún paso en la simulación, que guarde el valor actual en una nueva 
+      // posición, para que tenga tantos valores como pasos se vayan a ejecutar. En el paso 2 habrán 2 valores
+      }else if(dep.valor.length == this.index){
+        dep.valor.push(l.alturaActual);
+      }
+    }
+  }
 
 // --------------------------------------- CREACIÓN DEL GRID Y MANEJO DEL GUARDADO DE DATOS ---------------------------------------
-  // función para guardar los datos en la bd
+  // función para guardar los datos en un archivo json
   guardarDatosSimulacion() {
     const datos = {
       info: this.info,
@@ -864,6 +1007,9 @@ export class SimuladorComponent implements OnInit {
     }
     
     this.revincularSistemas();
+
+    // rellenamos los arrays de lamina y producción
+    this.registrarEnArrayCargando();
   }
 
 // --------------------------------------- OTRAS FUNCIONES  ---------------------------------------
@@ -900,6 +1046,22 @@ export class SimuladorComponent implements OnInit {
           sistema.tuberia.columna
       )!;
     }
+  }
+
+  imagenDeposito(content: any): string{
+    if (content.tipo !== 'deposito') {
+      return content.imagen; // para los demás tipos
+    }
+    // Separamos la imagen en -> ["deposito", "gris", "5.png"]
+    const partes = content.imagen.split("_");  
+
+    // La comprobación del min y el max es por si acaso, en principio no va a hacer falta nunca
+    const nivel = Math.min(8, Math.max(0, Math.floor(content.pctActual * 9)));
+
+    // Se cambia la parte final y se devuelve la imagen correcta
+    partes[partes.length - 1] = `${nivel}.png`;
+
+    return partes.join("_");
   }
 }
 

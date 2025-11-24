@@ -20,4 +20,8 @@ export class NavbarComponent {
     this.modal.cerrarModal();
   }
 
+  cerrarConstantes(){
+    this.modal.cerrarConstantes();
+  }
+
 }

@@ -14,7 +14,7 @@
     </article>
     <article>
         <app-herramientas-edicion (herramientaSimulador)="cambioHerramienta($event)" *ngIf="modoActivo === 'edicion'"></app-herramientas-edicion>
-        <app-herramientas-simulacion (herramientaSimulador)="cambioHerramienta($event)" *ngIf="modoActivo === 'simulacion'"></app-herramientas-simulacion>
+        <app-herramientas-simulacion #herrSim (herramientaSimulador)="cambioHerramienta($event)" *ngIf="modoActivo === 'simulacion'"></app-herramientas-simulacion>
     </article>
 </section>
 <!-- sección de modales que pueden aparecer dependiendo de donde cliquemos -->
@@ -31,7 +31,7 @@
         [class.selected]="celdaSeleccionada === cell"
         (click)="controladorCanvas(cell)">
             <div *ngIf="cell.content" class="cell-content">
-                <img [src]="cell.content.imagen" [alt]="cell.content.tipo">
+                <img [src]="imagenDeposito(cell.content)" [alt]="cell.content.tipo">
                 <p class="infoElemento">{{infoElemento(cell.content)}}</p>
                 <p class="infoSistema" *ngIf="cell.content.sistema.length > 0">
                     <ng-container *ngFor="let id of infoSistema(cell)">
