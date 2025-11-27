@@ -536,6 +536,31 @@ export class SimuladorComponent implements OnInit {
     this.guardarReloj();
   }
 
+  // función para actualizar algunos parametros del sistema o sus agentes
+  actualizarSistema(datos: any){
+    const sistema = this.sistemas.find(s => s.id == datos.id);
+    switch(datos.nombre){
+      case 'mu1':
+        sistema!.agente1.mu = datos.valor;
+        break;
+      case 'mu2':
+        sistema!.agente2.mu = datos.valor;
+        break;
+      case 'mu3':
+        sistema!.agente3.mu = datos.valor;
+        break;
+      case 'mu4':
+        sistema!.agente4.mu = datos.valor;
+        break;
+      case 'ponderar':
+        sistema!.agente4.ponderar = datos.valor
+        break;
+      case 'reaccion':
+        sistema!.reaccion = datos.valor
+        break;
+    }
+  }
+
 // --------------------------------------- LOGICA DE LAS TUBERÍAS --------------------------------------- 
   // función que se encarga de crear las conexiones entre elementos y las guarda en sistemas
   estadoSistemas(){

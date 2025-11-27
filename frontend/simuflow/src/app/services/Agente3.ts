@@ -35,17 +35,17 @@ export class Agente3{
         }
         
         // FORMA DE HACERLO CON LOS VALORES FIJOS
-        if(this.percepcion < 40){
-            this.influencia = 1;
-        }else if(40 <= this.percepcion && this.percepcion < 42){
-            this.influencia = 1 - (this.percepcion - 40) / 2;
-        }else if(42 <= this.percepcion && this.percepcion <= 54){
-            this.influencia = 0;
-        }else if(54 < this.percepcion && this.percepcion <= 56){
-            this.influencia = - (this.percepcion - 54) / 2;
-        }else if(this.percepcion < 56){
-            this.influencia = -1;
-        }
+        // if(this.percepcion < 40){
+        //     this.influencia = 1;
+        // }else if(40 <= this.percepcion && this.percepcion < 42){
+        //     this.influencia = 1 - (this.percepcion - 40) / 2;
+        // }else if(42 <= this.percepcion && this.percepcion <= 54){
+        //     this.influencia = 0;
+        // }else if(54 < this.percepcion && this.percepcion <= 56){
+        //     this.influencia = - (this.percepcion - 54) / 2;
+        // }else if(this.percepcion < 56){
+        //     this.influencia = -1;
+        // }
     }
 
     exec(){

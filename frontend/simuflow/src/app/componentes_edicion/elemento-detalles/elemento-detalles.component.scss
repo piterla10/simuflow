@@ -53,6 +53,7 @@ input[type=number] {
 article{
   padding: 10px;
 }
+
 span{
   display: flex;
   flex-direction: column;
@@ -138,4 +139,39 @@ section article h3{
   color: var(--rojo);
   font-size: 14px;
   font-size: 1.3rem;
+}
+
+.botonesTuberia{
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.botonesTuberia button{
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;  
+  background-color: var(--color-azul2);
+  font-weight: bold;
+  font-size: 1rem;
+  color: var(--blanco1);
+  width: 160px;
+  border: 1px solid var(--blanco2);
+  padding: 0.6rem;
+  cursor: pointer;
+}
+
+.botonesTuberia button:not(.activo):hover{
+  background-color: var(--color-fondo);
+  box-shadow: 0 0.1rem 0.4rem var(--color-fondo);
+}
+
+.botonesTuberia button.activo{
+  background-color: var(--color-fondo);
+  cursor: default;
+}
+
+h4{
+  margin: 0;
+  font-size: 1rem;
 }

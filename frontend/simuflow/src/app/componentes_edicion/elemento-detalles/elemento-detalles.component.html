@@ -100,18 +100,67 @@
       </article>
       <!-- ------------------------------ TUBERÍA ------------------------------ -->
       <article *ngSwitchCase="'tuberia'">
-        <span>
-          <h3>Presión maxima</h3>
-          <input type="number" class="datosSim" [(ngModel)]="presionMaxima" (input)="procesarPresionMaxima()">
-        </span>
-        <span>
-          <h3>Presión mínima</h3>
-          <input type="number" class="datosSim" [(ngModel)]="presionMinima" (input)="procesarPresionMinima()">
-        </span>
+        <div *ngIf="celda.content?.sistema?.length == 1">
+          <span class="botonesTuberia">
+            <button type="button" [class.activo]="editarSistema === false" (click)="editSistema(false)">Tubería</button>
+            <button type="button" [class.activo]="editarSistema === true" (click)="editSistema(true)">Sistema</button>
+          </span>
+          <div *ngIf="editarSistema == true">
+            <span class="reparticion">
+              <h3>Umbrales de los agentes</h3>
+              <div class="reparticion-item">
+                <label>Agente 1</label>
+                <input type="number" class="datosPorc" [(ngModel)]="mu1" (input)="procesarMu1()">
+              </div>
+              <div class="reparticion-item">
+                <label>Agente 2</label>
+                <input type="number" class="datosPorc" [(ngModel)]="mu2" (input)="procesarMu2()">
+              </div>
+              <div class="reparticion-item">
+                <label>Agente 3</label>
+                <input type="number" class="datosPorc" [(ngModel)]="mu3" (input)="procesarMu3()">
+              </div>
+              <div class="reparticion-item">
+                <label>Agente 4</label>
+                <input type="number" class="datosPorc" [(ngModel)]="mu4" (input)="procesarMu4()">
+              </div>
+            </span>
+            <span>
+              <h3>Ponderación de los agentes</h3>
+              <h4>Agente 1, 2 y 3</h4>
+              <input type="text" class="datosSim" [(ngModel)]="ponderar" (input)="procesarPonderacion()" placeholder="Ej: 0.5, 0.3, 0.2">
+            </span>
+            <p class="advertencia" *ngIf="!sumaPonderacion">La suma debe ser 1</p>
+            <span>
+              <h3>Reacción de los agentes en la bomba (0-1)</h3>
+              <input type="number" class="datosSim" [(ngModel)]="reaccion" (input)="procesarReaccion()">
+            </span>
+          </div>
+        </div>
+        <div *ngIf="celda.content?.sistema?.length == 0 || editarSistema == false">
+          <span>
+            <h3>Presión maxima</h3>
+            <input type="number" class="datosSim" [(ngModel)]="presionMaxima" (input)="procesarPresionMaxima()">
+          </span>
+          <span>
+            <h3>Presión mínima</h3>
+            <input type="number" class="datosSim" [(ngModel)]="presionMinima" (input)="procesarPresionMinima()">
+          </span>
+          <span>
+            <h3>Color de la tubería</h3>
+            <div class="bloque">
+              <div
+                class="colores"
+                *ngFor="let c of colores"
+                [ngStyle]="{ 'background-color': c.color }"
+                [class.activo]="colorCelda === c.id"
+                (click)="colorSeleccionado(c.id)"
+              ></div>
+            </div>
+          </span>
+        </div>
       </article>
     </section>
   </div>
 </div>
 
-
-<!-- se puede utilizar también ngSwitch en angular para que se muestre un tipo de codigo dependiendo de que se haya clicado -->

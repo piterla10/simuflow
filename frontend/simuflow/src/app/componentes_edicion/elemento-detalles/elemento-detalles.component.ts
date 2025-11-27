@@ -12,6 +12,7 @@ import { FormsModule } from '@angular/forms';
 export class ElementoDetallesComponent implements OnChanges{
   @Input() celda!: Cell;
   @Output() actualizar = new EventEmitter<Cell>();
+  @Output() valorSistema = new EventEmitter<any>();
 
   // para manejar la visibilidad del modal, los colores de los elementos y sus porcentajes
   visible = false;
@@ -35,6 +36,17 @@ export class ElementoDetallesComponent implements OnChanges{
   // variables a rellenar en caso de que la celda contenga una tubería
   presionMaxima: number = 10;
   presionMinima: number = 1;
+
+  // variables de los agentes y sistema
+  mu1: number = 0.01;
+  mu2: number = 0.5;
+  mu3: number = 0.01;
+  mu4: number = 0.01;
+  ponderar: number[] =[0.5, 0.3, 0.2];
+  sumaPonderacion: boolean = true;
+  reaccion: number = 1;
+  // esta es para controlar lo que se ve en la tubería
+  editarSistema = false;
 
 
   ngOnChanges(): void {
@@ -65,7 +77,6 @@ export class ElementoDetallesComponent implements OnChanges{
       this.datosSim = this.celda.content!.datosSimulacion.join(', ');
       this.consumoMaximo = this.celda.content!.consumoMaximo;
     }
-
   }
 
 
@@ -120,21 +131,21 @@ export class ElementoDetallesComponent implements OnChanges{
 
   // función para procesar los porcentajes de los sistemas
   procesarReparto() {
-  if (!this.celda.content || !this.celda.content.sistema) return;
+    if (!this.celda.content || !this.celda.content.sistema) return;
 
-  // El usuario puede escribir números raros → limpiamos
-  this.celda.content.sistema.forEach(s => {
-    if (isNaN(s.porcentaje) || s.porcentaje < 0) {
-      s.porcentaje = 0;
-    }
-  });
+    // El usuario puede escribir números raros → limpiamos
+    this.celda.content!.sistema!.forEach(s => {
+      if (isNaN(s.porcentaje) || s.porcentaje < 0) {
+        s.porcentaje = 0;
+      }
+    });
 
-  // validamos suma
-  const suma = this.celda.content.sistema
-    .reduce((acc, s) => acc + s.porcentaje, 0);
+    // validamos suma
+    const suma = this.celda.content.sistema
+      .reduce((acc, s) => acc + s.porcentaje, 0);
 
-  this.repartoValido = (suma === 100);
-}
+    this.repartoValido = (suma === 100);
+  }
 
   // función para guardar los números que servirán como datos de simulación 
   // mientras no esté funcionando el agente controlador
@@ -164,7 +175,6 @@ export class ElementoDetallesComponent implements OnChanges{
       this.celda.content!.alturaMax = this.alturaMax;
       this.celda.content!.pctActual = this.celda.content!.alturaActual / this.alturaMax;
     }
-
   }
 
   procesarCapacidad(){
@@ -211,4 +221,79 @@ export class ElementoDetallesComponent implements OnChanges{
     if('presionMin' in this.celda.content!)
       this.celda.content!.presionMin = this.presionMinima;
   }
+
+  // funciones para procesar los datos del sistema
+  editSistema(valor: boolean){
+    this.editarSistema = valor;
+  }
+
+  procesarMu1(){
+    const valor = {id: this.celda.content?.sistema[0].id, nombre: "mu1", valor: this.mu1};
+    this.valorSistema.emit(valor);
+  }
+  procesarMu2(){
+    const valor = {id: this.celda.content?.sistema[0].id, nombre: "mu2", valor: this.mu2};
+    this.valorSistema.emit(valor);
+  }
+  procesarMu3(){
+    const valor = {id: this.celda.content?.sistema[0].id, nombre: "mu3", valor: this.mu3};
+    this.valorSistema.emit(valor);
+  }
+  procesarMu4(){
+    const valor = {id: this.celda.content?.sistema[0].id, nombre: "mu4", valor: this.mu4};
+    this.valorSistema.emit(valor);
+  }
+  
+  procesarPonderacion(){
+  // Convertimos la entrada en un array separando por comas
+  const partes = String(this.ponderar)
+    .split(',')
+    .map(p => p.trim());
+
+  // Deben ser exactamente 3 valores
+  if (partes.length !== 3) {
+    this.sumaPonderacion = false;
+    return;
+  }
+
+  // Convertimos cada parte a número
+  const nums = partes.map(p => parseFloat(p));
+
+  // Validación básica: no NaN y todos entre 0 y 1
+  if (nums.some(n => isNaN(n) || n < 0 || n > 1)) {
+    this.sumaPonderacion = false;
+    return;
+  }
+
+  // La suma debe dar 1 (tolerancia mínima)
+  const suma = nums.reduce((a, b) => a + b, 0);
+  if (suma != 1) {
+    this.sumaPonderacion = false;
+    return;
+  }
+
+  // Si todo bien → asignamos y emitimos
+  this.ponderar = nums;
+  this.sumaPonderacion = true;
+    const valor = {id: this.celda.content?.sistema[0].id, nombre: "ponderar", valor: this.ponderar};
+    this.valorSistema.emit(valor);
+    
+  }
+
+  procesarReaccion(){
+    // evitamos que se deje vacío
+     if (isNaN(this.reaccion)) {
+      this.reaccion = 0;
+    }
+
+    // lo limitamos entre 0 y 1 por si acaso
+    if (this.reaccion < 0) {
+      this.reaccion = 0;
+    } else if (this.reaccion > 1) {
+      this.reaccion = 1;
+    }
+    const valor = {id: this.celda.content?.sistema[0].id, nombre: "reaccion", valor: this.reaccion};
+    this.valorSistema.emit(valor);
+  }
+
 }
