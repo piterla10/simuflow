@@ -1,1 +1,15 @@
-<p>velocidad works!</p>
+<div class="modal-overlay" *ngIf="visible">
+     <div class="modal-content">
+    <button type="button" class="boton" (click)="cerrarModal()"><img src="assets/x_blanca.png" alt="Cerrar"></button>
+    <section>
+      <article>
+        <h3>Velocidad de los pasos (ms)</h3>
+        <input type="number" class="datosSim" [(ngModel)]="tiempoCiclo" (input)="procesarTiempoCiclo()">
+      </article>
+      <article>
+        <h3>Tiempo transcurrido por paso (ms)</h3>
+        <input type="number" class="datosSim" [(ngModel)]="tiempoTranscurrido" (input)="procesarTiempoTranscurrido()">
+      </article>
+    </section>
+  </div>
+</div>

@@ -23,6 +23,8 @@
 <app-elemento-detalles #elementoDetalles [celda]="celdaSeleccionada!" (actualizar)="seleccionar($event)"></app-elemento-detalles>
 <app-basura #basura (borrar)="confirmarBorrado()"></app-basura>
 
+<app-velocidad #velocidad [ItiempoCiclo]="tiempoCiclo" [ItiempoTranscurrido]="tiempoTranscurrido" (EEtiempoCiclo)="procesarTiempoCiclo($event)" (EEtiempoTranscurrido)="procesarTiempoTranscurrido($event)"></app-velocidad>
+
 <!-- grid de trabajo -->
 <section class="grid-container">
     <article class="grid" [style.--cols]="columnas" [style.--rows]="filas">

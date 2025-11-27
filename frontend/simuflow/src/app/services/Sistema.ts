@@ -1,3 +1,7 @@
+import { Agente1 } from "./Agente1";
+import { Agente2 } from "./Agente2";
+import { Agente3 } from "./Agente3";
+import { Agente4 } from "./Agente4";
 import { Cell, Deposito, Generador, Tuberia, ZonaConsumo } from "./Cell";
 
 export class Sistema {
@@ -22,9 +26,14 @@ export class Sistema {
     // Parámetro para el control de la simulación
     valido: boolean = true;
 
+    // Instancias de los agentes
+    agente1 = new Agente1;
+    agente2 = new Agente2;
+    agente3 = new Agente3;
+    agente4 = new Agente4;
 
-    // habrá que añadir aquí una instancia de cada agente
-
+    // variable para determinar si la decisión de los agentes será más o menos reactiva
+    reaccion: number = 1;
     
 
 // --------------------------- FUNCIONES PARA LA SIMULACIÓN ---------------------------
@@ -41,6 +50,10 @@ export class Sistema {
         this.calcularFlujos(paso, tiempoTranscurrido, produccion, constPorCons, constPorBomb);
 
         // codigo de los agentes
+        this.agente1.percept(this.depositos);
+        this.agente2.percept(this.generadores, produccion, this.consumo, this.aguaDesdeDeposito, this.aguaHaciaDeposito, paso);
+        this.agente3.percept(this.tuberia);
+        this.agente4.percept(this.agente1.influencia, this.agente2.influencia, this.agente3.influencia);
 
         this.influenciaSobreMotor();
     }
@@ -139,7 +152,7 @@ export class Sistema {
                             d.pctActual = siguientePct;
                         });
                         aguaRestante -= aguaNecesaria;
-                    } else {
+                    }else {
                         // no hay suficiente agua, repartir proporcionalmente
                         grupos.forEach(d => {
                             let fraccion = d.volumenxPct / grupos.reduce((sum, dd) => sum + dd.volumenxPct, 0);
@@ -187,7 +200,7 @@ export class Sistema {
                             d.pctActual = siguientePct;
                         });
                         aguaRestante -= aguaNecesaria;
-                    } else {
+                    }else {
                         // repartir proporcionalmente la cantidad que queda
                         grupos.forEach(d => {
                             let fraccion = d.volumenxPct / grupos.reduce((sum, dd) => sum + dd.volumenxPct, 0);
@@ -207,12 +220,6 @@ export class Sistema {
             }
         }
         
-        // el tema de guardar el valor de la lámina de agua de los depósitos en un array 
-        // como hace jose vicente, sería mejor hacerlo desde el simulador porque en el caso de que
-        // un depósito esté en dos sistemas distintos, si se guarda el valor aquí, un depósito tendría
-        // dos láminas distintas en el mismo paso. Lo mejor sería después de hacer el emitir de 
-        // todos los sistemas, que el simulador recorra los depósitos y guarde los valores de sus láminas
-
         // calculamos la presión
         this.calculoPresion(paso, produccion, constPorCons, constPorBomb);
     }
@@ -257,9 +264,12 @@ export class Sistema {
 
     // función que se encargar de encender o apagar más las bombas
     influenciaSobreMotor(){
-
+         this.generadores.forEach(gen =>{
+            const generador = gen.content as Generador;
+            const porcentaje = generador.sistema.find(g => g.id === this.id);
+            generador.produccion = generador.produccion + this.agente4.Im * (porcentaje!.porcentaje / 100) * this.reaccion;
+            generador.produccion = Math.min(1, Math.max(0, generador.produccion));
+        });
     }
 };
 
-// si tienes un depósito conectado a dos sistemas y se está llenando, ¿se apagarían
-// las bombas de los dos sistemas? 

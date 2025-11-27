@@ -12,10 +12,11 @@ import { CrearElementoComponent } from "../../componentes_edicion/crear-elemento
 import { ElementoDetallesComponent } from "../../componentes_edicion/elemento-detalles/elemento-detalles.component";
 import { BasuraComponent } from '../../componentes_edicion/basura/basura.component';
 import { Sistema } from '../../services/Sistema';
+import { VelocidadComponent } from "../../componentes_simulacion/velocidad/velocidad.component";
 
 @Component({
   selector: 'app-simulador',
-  imports: [NavbarComponent, CommonModule, HerramientasEdicionComponent, HerramientasSimulacionComponent, CrearElementoComponent, ElementoDetallesComponent, BasuraComponent],
+  imports: [NavbarComponent, CommonModule, HerramientasEdicionComponent, HerramientasSimulacionComponent, CrearElementoComponent, ElementoDetallesComponent, BasuraComponent, VelocidadComponent],
   templateUrl: './simulador.component.html',
   styleUrl: './simulador.component.scss'
 })
@@ -26,6 +27,7 @@ export class SimuladorComponent implements OnInit {
   @ViewChild('elementoDetalles') modalElementoDetalles!: ElementoDetallesComponent;
   @ViewChild('navbar') modalNavbar!: NavbarComponent;
   @ViewChild('herrSim') herramientaSim!: HerramientasSimulacionComponent;
+  @ViewChild('velocidad') modalVelocidad!: VelocidadComponent;
 
   constructor(private simulacionService: SimulacionService){}
   
@@ -34,7 +36,11 @@ export class SimuladorComponent implements OnInit {
   // hacer sin variable pero al utilizarla luego se puede destruir
   // en ngOnDestroy y se evitan fugas de memoria.
   private guardarDatos!: Subscription;
-  private cargarDatos!: Subscription;
+  private cargarDatos!: Subscription;  
+  // ahora las de las constantes
+  private suscripcionPorBombeo!: Subscription;
+  private suscripcionPorConsumo!: Subscription;
+
 
   // para el manejo del Grid
   // publico para que se pueda acceder desde el html
@@ -64,9 +70,9 @@ export class SimuladorComponent implements OnInit {
   public valido: boolean = true;
   // Parametros para simular la evolución de la presión
     // esto es lo máximo que puede llegar a bajar la presión por consumo
-  constantePorConsumo = 15;
+  public constantePorConsumo = 15;
     // maximo que puede subir la presión por bombeo
-  constantePorBombeo = 15;
+  public constantePorBombeo = 15;
 
 
   // arrays para almacenar los valores de las láminas y de producción en la simulacion
@@ -98,6 +104,13 @@ export class SimuladorComponent implements OnInit {
         this.datosGrid = datos.grid;
         this.idElemento = datos.idElemento;
         this.idSistema = datos.idSistema;
+        this.constantePorConsumo = datos.constantes.constantePorConsumo;
+        this.constantePorBombeo = datos.constantes.constantePorBombeo;
+        // la función es para que al cargar el archivo se cambien los valores de las
+        // variables de constantes.component
+        this.simulacionService.recibirConstantesCargadas(datos.constantes);
+        this.tiempoCiclo = datos.reloj.tiempoCiclo;
+        this.tiempoTranscurrido = datos.reloj.tiempoTranscurrido;
         
         this.sistemas = datos.sistemas.map((d: any) => {
           const sistema = new Sistema(
@@ -114,6 +127,8 @@ export class SimuladorComponent implements OnInit {
         // guardamos en el localstorage los datos nuevos
         this.guardarGrid();
         this.guardarSistemas();
+        this.guardarConstantes();
+        this.guardarReloj();
 
         this.revincularSistemas();
 
@@ -122,13 +137,30 @@ export class SimuladorComponent implements OnInit {
 
         localStorage.setItem('infoGrid', JSON.stringify(this.info));
       }
-    })
+    });
+
+    this.suscripcionPorConsumo = this.simulacionService.constantePorConsumo$.subscribe(datos =>{
+      this.constantePorConsumo = datos;
+      // guardamos los datos en localstorage
+      this.guardarConstantes();
+    });
+
+    this.suscripcionPorBombeo = this.simulacionService.constantePorBombeo$.subscribe(datos =>{
+      this.constantePorBombeo = datos;
+      // guardamos los datos en localstorage
+      this.guardarConstantes();
+    });
+
+
+
   }
 
   // destructor de la variable que estaba pendiente de si se clica el guardar
   ngOnDestroy() {
     this.guardarDatos?.unsubscribe();
     this.cargarDatos?.unsubscribe();
+    this.suscripcionPorBombeo?.unsubscribe();
+    this.suscripcionPorConsumo?.unsubscribe();
   }
 
   // --------------------------------------- SELECCIÓN DE MODO Y CAMBIO DE HERRAMIENTA ---------------------------------------
@@ -196,7 +228,7 @@ export class SimuladorComponent implements OnInit {
           this.step();
         break;
       case 'reloj':
-        
+        this.abrirModales('velocidad');
         break;
     }
   }
@@ -217,6 +249,15 @@ export class SimuladorComponent implements OnInit {
       case 'elementoDetalles':
         this.modalElementoDetalles.abrirModal();
         break;
+      case 'navbar':
+        if(this.modalActual && this.modalActual !== 'navbar'){
+          this.cerrarModales(this.modalActual);
+          this.celdaSeleccionada = null;
+        }
+        break;
+      case 'velocidad':
+        this.modalVelocidad.abrirModal();
+        break;
     }
     this.modalActual = nombreModal;
   }
@@ -235,12 +276,16 @@ export class SimuladorComponent implements OnInit {
       case 'navbar':
         this.modalNavbar.cerrarModal();
         break;
+      case 'velocidad':
+        this.modalVelocidad.cerrarModal();
+        break;
       case '':
         // este caso es para cerrar todos los modales que puedan estar abiertos
         this.modalCrearElemento.cerrarModal();
         this.modalBasura.cerrarModal();
         this.modalElementoDetalles.cerrarModal();
         this.modalNavbar.cerrarModal();
+        this.modalVelocidad.cerrarModal();
         break;
     }
       this.modalActual = null;
@@ -281,6 +326,7 @@ export class SimuladorComponent implements OnInit {
       this.cerrarModales('elementoDetalles')
       this.celdaSeleccionada = null;
     }else if(cell.content){
+      this.cerrarModales('');
       this.celdaSeleccionada = cell;
       this.abrirModales('elementoDetalles');
     }
@@ -477,6 +523,17 @@ export class SimuladorComponent implements OnInit {
         // presión actual
         return `${format(elemento.presionActual)}`;
     }
+  }
+
+  // para cambair los valores del reloj
+  procesarTiempoCiclo(numero: number){
+    this.tiempoCiclo = numero;
+    // guardamos los datos en localstorage;
+    this.guardarReloj();
+  }
+  procesarTiempoTranscurrido(numero: number){
+    this.tiempoTranscurrido = numero;
+    this.guardarReloj();
   }
 
 // --------------------------------------- LOGICA DE LAS TUBERÍAS --------------------------------------- 
@@ -926,7 +983,9 @@ export class SimuladorComponent implements OnInit {
       grid: this.datosGrid,
       idElemento: this.idElemento,
       sistemas: this.sistemas,
-      idSistema: this.idSistema
+      idSistema: this.idSistema,
+      constantes: {constantePorBombeo: this.constantePorBombeo, constantePorConsumo: this.constantePorConsumo},
+      reloj: {tiempoCiclo: this.tiempoCiclo, tiempoTranscurrido: this.tiempoTranscurrido}
     };
 
     const contenido = JSON.stringify(datos, null, 2);
@@ -963,6 +1022,20 @@ export class SimuladorComponent implements OnInit {
   guardarSistemas(){
     localStorage.setItem('datosSistemas', JSON.stringify(this.sistemas));
     localStorage.setItem('idSistema', JSON.stringify(this.idSistema));
+  }
+
+  guardarConstantes(){
+    localStorage.setItem('constantes', JSON.stringify({
+      constantePorConsumo: this.constantePorConsumo,
+      constantePorBombeo: this.constantePorBombeo
+    }));
+  }
+
+  guardarReloj(){
+    localStorage.setItem('reloj', JSON.stringify({
+      tiempoCiclo: this.tiempoCiclo,
+      tiempoTranscurrido: this.tiempoTranscurrido
+    }));
   }
 
   cargarDatosLocalStorage(){
@@ -1004,6 +1077,21 @@ export class SimuladorComponent implements OnInit {
         sistema.valido = d.valido ?? true;
         return sistema;
       });
+    }
+
+    // constantes de la simulación
+    const constantesJSON = localStorage.getItem('constantes');
+    if(constantesJSON){
+      const constantes = JSON.parse(constantesJSON);
+      this.constantePorConsumo = constantes.constantePorConsumo;
+      this.constantePorBombeo = constantes.constantePorBombeo;
+      this.simulacionService.recibirConstantesCargadas(constantes);
+    }
+
+    const relojJSON = localStorage.getItem('reloj');
+    if(relojJSON){
+      this.tiempoCiclo = JSON.parse(relojJSON).tiempoCiclo;
+      this.tiempoTranscurrido = JSON.parse(relojJSON).tiempoTranscurrido;
     }
     
     this.revincularSistemas();

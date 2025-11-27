@@ -1,6 +1,15 @@
 <div class="modal-overlay" *ngIf="visible">
      <div class="modal-content">
     <button type="button" class="boton" (click)="cerrarModal()"><img src="assets/x_blanca.png" alt="Cerrar"></button>
-
+    <section>
+      <article>
+        <h3>Constante por consumo</h3>
+        <input type="number" class="datosSim" [(ngModel)]="constantePorConsumo" (input)="procesarConsumo()">
+      </article>
+      <article>
+        <h3>Constante por bombeo</h3>
+        <input type="number" class="datosSim" [(ngModel)]="constantePorBombeo" (input)="procesarBombeo()">
+      </article>
+    </section>
   </div>
 </div>

@@ -74,6 +74,7 @@ export class ModalOpcionesComponent {
     this.cerrarModal();
     this.router.navigate(['/']);
     this.simulacionService.cargar(null);
+    this.simulacionService.recibirConstantesCargadas(null);
   }
 
   mostrarErrorTemporal() {
