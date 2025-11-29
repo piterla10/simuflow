@@ -16,6 +16,10 @@
         <app-herramientas-edicion (herramientaSimulador)="cambioHerramienta($event)" *ngIf="modoActivo === 'edicion'"></app-herramientas-edicion>
         <app-herramientas-simulacion #herrSim (herramientaSimulador)="cambioHerramienta($event)" *ngIf="modoActivo === 'simulacion'"></app-herramientas-simulacion>
     </article>
+    <div *ngIf="sistemas.length > 1" class="boton-flotante">
+       <!-- Botón que activa el modal del orden de los app-orden-sistemas -->
+        <button type="button" class="boton" (click)="abrirModales('ordenSistemas')"><img class="botonSistemas" src="assets/controlador.png" alt="Orden sistemas"></button>
+    </div>
 </section>
 <!-- sección de modales que pueden aparecer dependiendo de donde cliquemos -->
 
@@ -24,7 +28,7 @@
 <app-basura #basura (borrar)="confirmarBorrado()"></app-basura>
 
 <app-velocidad #velocidad [ItiempoCiclo]="tiempoCiclo" [ItiempoTranscurrido]="tiempoTranscurrido" (EEtiempoCiclo)="procesarTiempoCiclo($event)" (EEtiempoTranscurrido)="procesarTiempoTranscurrido($event)"></app-velocidad>
-
+<app-orden-sistemas #ordenSistemas [sistemas]="sistemas"></app-orden-sistemas>
 <!-- grid de trabajo -->
 <section class="grid-container">
     <article class="grid" [style.--cols]="columnas" [style.--rows]="filas">
@@ -44,3 +48,4 @@
         </div>
     </article>
 </section>
+

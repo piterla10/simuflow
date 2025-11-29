@@ -1,0 +1,14 @@
+<div class="modal-overlay" *ngIf="visible">
+    <div class="modal-content">
+        <button type="button" class="boton" (click)="cerrarModal()"><img class="botonCerrar" src="assets/x_blanca.png" alt="Cerrar"></button>
+        <h3>Orden de los sistemas:</h3>
+        <section class ="reparticion">
+            <article *ngFor="let sis of sistemas; let i = index" class="reparticion-item">
+                <label>{{i+1}}º</label>
+                <button [class.activo]="this.sistemaSeleccionado === sis.id" (click)="seleccionarSistema(sis.id)"> Sistema {{ sis.id }}</button>
+                <!-- <input type="number" class="datosSim" [(ngModel)]="constantePorConsumo" (input)="procesarConsumo()"> -->
+            </article>
+        </section>
+    </div>
+</div>
+

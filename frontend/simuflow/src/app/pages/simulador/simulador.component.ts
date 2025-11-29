@@ -13,10 +13,11 @@ import { ElementoDetallesComponent } from "../../componentes_edicion/elemento-de
 import { BasuraComponent } from '../../componentes_edicion/basura/basura.component';
 import { Sistema } from '../../services/Sistema';
 import { VelocidadComponent } from "../../componentes_simulacion/velocidad/velocidad.component";
+import { OrdenSistemasComponent } from "../../componentes_simulacion/orden-sistemas/orden-sistemas.component";
 
 @Component({
   selector: 'app-simulador',
-  imports: [NavbarComponent, CommonModule, HerramientasEdicionComponent, HerramientasSimulacionComponent, CrearElementoComponent, ElementoDetallesComponent, BasuraComponent, VelocidadComponent],
+  imports: [NavbarComponent, CommonModule, HerramientasEdicionComponent, HerramientasSimulacionComponent, CrearElementoComponent, ElementoDetallesComponent, BasuraComponent, VelocidadComponent, OrdenSistemasComponent],
   templateUrl: './simulador.component.html',
   styleUrl: './simulador.component.scss'
 })
@@ -28,6 +29,7 @@ export class SimuladorComponent implements OnInit {
   @ViewChild('navbar') modalNavbar!: NavbarComponent;
   @ViewChild('herrSim') herramientaSim!: HerramientasSimulacionComponent;
   @ViewChild('velocidad') modalVelocidad!: VelocidadComponent;
+  @ViewChild('ordenSistemas') modalOrdenSistemas!: OrdenSistemasComponent;
 
   constructor(private simulacionService: SimulacionService){}
   
@@ -48,7 +50,7 @@ export class SimuladorComponent implements OnInit {
   public columnas!: number;
   public celdaSeleccionada: Cell | null = null;
   private idElemento: number = 0;
-  private idSistema!: number;
+  private idSistema: number = 1;
   
   // información que recibimos de inicio o vamos rellenando
   private info: any;
@@ -103,7 +105,6 @@ export class SimuladorComponent implements OnInit {
         this.columnas = datos.info.columnas;
         this.datosGrid = datos.grid;
         this.idElemento = datos.idElemento;
-        this.idSistema = datos.idSistema;
         this.constantePorConsumo = datos.constantes.constantePorConsumo;
         this.constantePorBombeo = datos.constantes.constantePorBombeo;
         // la función es para que al cargar el archivo se cambien los valores de las
@@ -250,6 +251,9 @@ export class SimuladorComponent implements OnInit {
         this.modalElementoDetalles.abrirModal();
         break;
       case 'navbar':
+        // esto es realmente para cerrar los modales que puedan estar abiertos
+        // lo que abre el modal del navbar de verdad es el botón hamburguesa
+        // del propio componente
         if(this.modalActual && this.modalActual !== 'navbar'){
           this.cerrarModales(this.modalActual);
           this.celdaSeleccionada = null;
@@ -257,6 +261,18 @@ export class SimuladorComponent implements OnInit {
         break;
       case 'velocidad':
         this.modalVelocidad.abrirModal();
+        break;
+      case 'ordenSistemas':
+        // si hay uno abierto que es distinto se cierra
+        if(this.modalActual && this.modalActual !== 'ordenSistemas'){
+          this.cerrarModales(this.modalActual);
+        }
+        if(this.modalOrdenSistemas.visible){
+          this.cerrarModales('ordenSistemas');
+          return;
+        }else{
+          this.modalOrdenSistemas.abrirModal();
+        }
         break;
     }
     this.modalActual = nombreModal;
@@ -279,6 +295,9 @@ export class SimuladorComponent implements OnInit {
       case 'velocidad':
         this.modalVelocidad.cerrarModal();
         break;
+      case 'ordenSistemas':
+        this.modalOrdenSistemas.cerrarModal();
+        break;
       case '':
         // este caso es para cerrar todos los modales que puedan estar abiertos
         this.modalCrearElemento.cerrarModal();
@@ -286,6 +305,7 @@ export class SimuladorComponent implements OnInit {
         this.modalElementoDetalles.cerrarModal();
         this.modalNavbar.cerrarModal();
         this.modalVelocidad.cerrarModal();
+        this.modalOrdenSistemas.cerrarModal();
         break;
     }
       this.modalActual = null;
@@ -671,6 +691,8 @@ export class SimuladorComponent implements OnInit {
         // si no pertenece a un sistema, comprueba si sería válido y lo crearía en caso de que así sea,
         // si no es válido simplemente no se crearía nada
         if (auxGeneradores.length > 0 && auxDepositos.length > 0 && auxAreas.length > 0) {
+          
+          this.generarIdSistema();
           // creamos una instancia de la clase Sistema y rellenamos sus parámetros
           let sistemaNuevo = new Sistema(
             this.idSistema,
@@ -697,7 +719,6 @@ export class SimuladorComponent implements OnInit {
           this.registrarEnArray(auxGeneradores, auxDepositos);
   
           this.sistemas.push(sistemaNuevo);
-          this.generarIdSistema();
         }
       }        
     }
@@ -1008,7 +1029,6 @@ export class SimuladorComponent implements OnInit {
       grid: this.datosGrid,
       idElemento: this.idElemento,
       sistemas: this.sistemas,
-      idSistema: this.idSistema,
       constantes: {constantePorBombeo: this.constantePorBombeo, constantePorConsumo: this.constantePorConsumo},
       reloj: {tiempoCiclo: this.tiempoCiclo, tiempoTranscurrido: this.tiempoTranscurrido}
     };
@@ -1046,7 +1066,6 @@ export class SimuladorComponent implements OnInit {
 
   guardarSistemas(){
     localStorage.setItem('datosSistemas', JSON.stringify(this.sistemas));
-    localStorage.setItem('idSistema', JSON.stringify(this.idSistema));
   }
 
   guardarConstantes(){
@@ -1084,7 +1103,6 @@ export class SimuladorComponent implements OnInit {
     
     // cargamos los ids
     this.idElemento = JSON.parse(localStorage.getItem('idElemento') || '0');
-    this.idSistema = JSON.parse(localStorage.getItem('idSistema') || '1');
     
     const sistemasJSON = localStorage.getItem('datosSistemas');
     if(sistemasJSON){
@@ -1133,7 +1151,18 @@ export class SimuladorComponent implements OnInit {
   }
 
   private generarIdSistema(): number{
-    return this.idSistema++;
+    for(let i = 1; i <= this.sistemas.length+1; i++){
+      let libre = true;
+      for(const sis of this.sistemas){
+        if(sis.id === i){
+          libre = false;
+        }
+      }
+      if(libre){
+        this.idSistema = i;
+      }
+    }
+    return this.idSistema;
   }
 
   getCell(fila: number, columna: number): Cell | null {
