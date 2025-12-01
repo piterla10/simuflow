@@ -16,7 +16,7 @@
         <app-herramientas-edicion (herramientaSimulador)="cambioHerramienta($event)" *ngIf="modoActivo === 'edicion'"></app-herramientas-edicion>
         <app-herramientas-simulacion [vistaCambiada]="vistaSimulacion" #herrSim (herramientaSimulador)="cambioHerramienta($event)" *ngIf="modoActivo === 'simulacion'"></app-herramientas-simulacion>
     </article>
-    <div *ngIf="sistemas.length > 1" class="boton-flotante">
+    <div *ngIf="sistemas.length > 1 && paso == 0" class="boton-flotante">
        <!-- Botón que activa el modal del orden de los app-orden-sistemas -->
         <button type="button" class="boton" (click)="abrirModales('ordenSistemas')"><img class="botonSistemas" src="assets/controlador.png" alt="Orden sistemas"></button>
     </div>

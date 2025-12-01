@@ -14,14 +14,29 @@ import { BasuraComponent } from '../../componentes_edicion/basura/basura.compone
 import { Sistema } from '../../services/Sistema';
 import { VelocidadComponent } from "../../componentes_simulacion/velocidad/velocidad.component";
 import { OrdenSistemasComponent } from "../../componentes_simulacion/orden-sistemas/orden-sistemas.component";
-import { NgxEchartsModule } from 'ngx-echarts';
-import { fromReadableStreamLike } from 'rxjs/internal/observable/innerFrom';
+import { NgxEchartsDirective, provideEchartsCore } from 'ngx-echarts';
+import * as echarts from 'echarts/core';
+import { CanvasRenderer } from 'echarts/renderers';
+import { LineChart } from 'echarts/charts';
+import { GridComponent, TooltipComponent, LegendComponent, DataZoomComponent, ToolboxComponent } from 'echarts/components';
+
+echarts.use([
+  CanvasRenderer, 
+  LineChart,
+  GridComponent,
+  TooltipComponent,
+  LegendComponent,
+  DataZoomComponent,
+  ToolboxComponent
+]);
 
 @Component({
   selector: 'app-simulador',
-  imports: [NgxEchartsModule ,NavbarComponent, CommonModule, HerramientasEdicionComponent, HerramientasSimulacionComponent, CrearElementoComponent, ElementoDetallesComponent, BasuraComponent, VelocidadComponent, OrdenSistemasComponent],
+  standalone: true,
+  imports: [NgxEchartsDirective, NavbarComponent, CommonModule, HerramientasEdicionComponent, HerramientasSimulacionComponent, CrearElementoComponent, ElementoDetallesComponent, BasuraComponent, VelocidadComponent, OrdenSistemasComponent],
   templateUrl: './simulador.component.html',
-  styleUrl: './simulador.component.scss'
+  styleUrl: './simulador.component.scss',
+  providers: [provideEchartsCore({echarts})]
 })
 export class SimuladorComponent implements OnInit {
   // para utilizar las funciones de abrir y cerrar modal 
@@ -888,9 +903,16 @@ export class SimuladorComponent implements OnInit {
   play(){
     this.timerActive = true;
     this.timeoutID = setTimeout(() => {
-      // Guardamos los datos actuales correspondientes en los arrays
+      // guardamos los datos actuales correspondientes en los arrays
       this.guardarDatoDeProduccion();
       this.guardarDatoDeLamina();
+
+      if(this.paso == 0){
+        this.registrarOptions();
+      }
+        // rellenamos merge
+        this.actualizarGrafico();
+      
 
       if(this.valido){
         // ejecutamos los calculos de todos los sistemas para el siguiente paso
@@ -917,6 +939,14 @@ export class SimuladorComponent implements OnInit {
     this.guardarDatoDeProduccion();
     this.guardarDatoDeLamina();
 
+    if(this.paso == 0){
+        this.registrarOptions();
+    }
+      this.actualizarGrafico();
+    
+      // rellenamos merge
+
+    // this.actualizarGrafico();
     // si se puede hacer el step
     if(this.valido){
       for(const sistema of this.sistemas){
@@ -954,6 +984,10 @@ export class SimuladorComponent implements OnInit {
     // Guardamos de nuevo en los arrays el primer valor que tenía cada generador y depósito
     this.guardarDatoDeProduccion();
     this.guardarDatoDeLamina();
+
+    this.options = {};
+    this.merge = JSON.parse(JSON.stringify(this.options));
+
   }
 
   // stepBack(){}
@@ -1161,53 +1195,20 @@ export class SimuladorComponent implements OnInit {
 // --------------------------------------- FUNCIONES PARA MOSTRAR EL GRAFICO ---------------------------------------
   // función que se encarga de registrar los valores de los sistemas en options para los charts
   registrarOptions(){
-    // hay que crear en legend -> data una lista de etiquetas que tendrá cada linea tendrá que estar
-    // en el mismo orden que luego en series en merge para que sean representados correctamente
-    let leyenda: {nombre: string, yAxis: number}[] = [];
-
-    // registramos en el array leyenda las variables propias de cada sistema
-    this.sistemas.forEach(sistema =>{
-      leyenda.push({nombre: `-WTF ${sistema.id}`, yAxis: 0});
-      leyenda.push({nombre: `WPF ${sistema.id}`, yAxis: 0});
-      leyenda.push({nombre: `+WTF ${sistema.id}`, yAxis: 0});
-      leyenda.push({nombre: `Presion ${sistema.id}`, yAxis: 0});
-      leyenda.push({nombre: `I1 ${sistema.id}`, yAxis: 1});
-      leyenda.push({nombre: `I2 ${sistema.id}`, yAxis: 1});
-      leyenda.push({nombre: `I3 ${sistema.id}`, yAxis: 1});
-      leyenda.push({nombre: `I4 ${sistema.id}`, yAxis: 1});
-    });
-
-    // ahora registramos los valores de los depósitos, tuberías, bombas y zonas de consumo
-    this.sistemas.forEach(sistema =>{
-      for(const deposito of sistema.depositos){
-        // guardamos el nombre para la comprobación de después
-        const nombre = `HWT ${deposito.content?.id}`;
-        // si el depósito ya se encuentra en el array de leyenda entonces no se guarda
-        if(!leyenda.find(e => e.nombre === nombre)) {
-          leyenda.push({ nombre, yAxis: 1 });
-        }
-      }
-      
-      // lo mismo con el estado de las bombas
-      for(const generador of sistema.generadores){
-        const nombre = `PS ${generador.content?.id}`;
-        if(!leyenda.find(e => e.nombre === nombre)) {
-          leyenda.push({nombre, yAxis: 1});
-        }
-      }
-
-      // y finalizamos con  las zonas de consumo
-      for(const zona of sistema.consumo){
-        const nombre = `CC ${zona.content?.id}`;
-        if(!leyenda.find(e => e.nombre === nombre)) {
-          leyenda.push({nombre, yAxis: 0});
-        }
-      }
-    });
+   const leyenda = this.rellenarDatosECharts();
     
     this.options = {
       legend: {
+        top: 5,
+        right: 'center',
+        // type: 'scroll',
         data: leyenda.map(e => e.nombre)
+      },
+        grid: {
+          top: '12.5%',
+          left: '4.5%',
+          right: '4.5%',
+          bottom: '12%'
       },
       toolbox: {
         feature: {
@@ -1248,38 +1249,40 @@ export class SimuladorComponent implements OnInit {
       }))
     }
 
+    for(let i = 0; i < this.options.series.length ; i++){
+      this.options.series[i].data.push(leyenda[i].numero);
+    }
     // Inicializamos merge con los datos de options
     this.merge = JSON.parse(JSON.stringify(this.options));
   }
   
   actualizarGrafico(){
-    // añadimos el punto que se rellenará a continuación
+  // añadimos el punto que se rellenará a continuación
     this.merge.xAxis.data.push(String(this.merge.xAxis.data.length +1));
-    let datos: {clave: string, numero: number}[] = [];
-     // cosas que hay que sacar de cada sistema:
-    // HWT de cada tanque, -WTF, WPF, +WTF, Preassure, I1, I2, I3, I4, estado bombas[paso], valores de consumo[paso]
-    // 1                    0     0     0       0       1   1   1   1         1                 0
-    // se podrían registrar las cosas propias de cada sistema y luego para el HWT, estado bombas y valores de consumo
-    // ir recorriendo los elementos de cada sistema guardando 
-    
-    // las cosas propias que hay que registrar de cada sistema serían:
-    // -WTF, WPF, +WTF, Preassure, I1, I2, I3, I4
-    
-    // hay que crear en legend -> data una lista de etiquetas que tendrá cada linea tendrá que estar
-    // en el mismo orden que luego en series en merge para que sean representados correctamente
 
+    const datos = this.rellenarDatosECharts();
 
+    for(let i = 0; i < this.merge.series.length ; i++){
+      this.merge.series[i].data.push(datos[i].numero);
+    }
+
+    // forzamos que angular se de cuenta del cambio
+    this.merge = JSON.parse(JSON.stringify(this.merge)); 
+  }
+
+  rellenarDatosECharts(): {nombre: string, yAxis: number, numero: number}[]{
+    let datos: {nombre: string, yAxis: number, numero: number}[] = [];
     // registramos en el array leyenda las variables propias de cada sistema
     this.sistemas.forEach(sistema =>{
-      datos.push({clave: `-WTF ${sistema.id}`,numero: sistema.aguaDesdeDeposito});
-      datos.push({clave: `WPF ${sistema.id}`, numero: sistema.aguaDesdeBomba});
-      datos.push({clave: `+WTF ${sistema.id}`, numero: sistema.aguaHaciaDeposito});
+      datos.push({nombre: `-WTF ${sistema.id}`, yAxis: 0, numero: sistema.aguaDesdeDeposito});
+      datos.push({nombre: `WPF ${sistema.id}`, yAxis: 0, numero: sistema.aguaDesdeBomba});
+      datos.push({nombre: `+WTF ${sistema.id}`, yAxis: 0, numero: sistema.aguaHaciaDeposito});
       const tuberia = sistema.tuberia.content as Tuberia;
-      datos.push({clave: `Presion ${sistema.id}`, numero: tuberia.presionActual});
-      datos.push({clave: `I1 ${sistema.id}`, numero: sistema.agente1.influencia});
-      datos.push({clave: `I2 ${sistema.id}`, numero: sistema.agente2.influencia});
-      datos.push({clave: `I3 ${sistema.id}`, numero: sistema.agente3.influencia});
-      datos.push({clave: `I4 ${sistema.id}`, numero: sistema.agente4.Im});
+      datos.push({nombre: `Presion ${sistema.id}`, yAxis: 0, numero: tuberia.presionActual});
+      datos.push({nombre: `I1 ${sistema.id}`, yAxis: 1, numero: sistema.agente1.influencia});
+      datos.push({nombre: `I2 ${sistema.id}`, yAxis: 1, numero: sistema.agente2.influencia});
+      datos.push({nombre: `I3 ${sistema.id}`, yAxis: 1, numero: sistema.agente3.influencia});
+      datos.push({nombre: `I4 ${sistema.id}`, yAxis: 1, numero: sistema.agente4.Im});
     });
 
     // ahora registramos los valores de los depósitos, tuberías, bombas y zonas de consumo
@@ -1288,43 +1291,32 @@ export class SimuladorComponent implements OnInit {
         // guardamos el nombre para la comprobación de después
         const nombre = `HWT ${deposito.content?.id}`;
         // si el depósito ya se encuentra en el array de leyenda entonces no se guarda
-        if(!datos.find(d => d.clave === nombre)){
+        if(!datos.find(d => d.nombre === nombre)){
           const dep = deposito.content as Deposito;
-          datos.push({clave: nombre, numero: dep.alturaActual});
+          datos.push({nombre: nombre, yAxis: 1, numero: dep.alturaActual});
         }
       }
       
       // lo mismo con el estado de las bombas
       for(const generador of sistema.generadores){
         const nombre = `PS ${generador.content?.id}`;
-        if(!datos.find(d => d.clave === nombre)){
+        if(!datos.find(d => d.nombre === nombre)){
           const gen = generador.content as Generador;
-          datos.push({clave: nombre, numero: gen.produccion});
+          datos.push({nombre: nombre, yAxis: 1, numero: gen.produccion});
         }
       }
 
       // y finalizamos con  las zonas de consumo
       for(const zona of sistema.consumo){
         const nombre = `CC ${zona.content?.id}`;
-        if(!datos.find(d => d.clave === nombre)){
+        if(!datos.find(d => d.nombre === nombre)){
           const zon = zona.content as ZonaConsumo;
-          datos.push({clave: nombre, numero: zon.datosSimulacion[this.paso]});
+          datos.push({nombre: nombre, yAxis: 0, numero: zon.datosSimulacion[this.paso]});
         }
       }
     });
 
-    for(let i = 0; i < this.merge.series.length ; i++){
-      this.merge.series[i].data.push(datos[i].numero);
-    }
-
-    // otra forma de hacer el for de antes más segura:
-    // this.merge.series.forEach(serie => {
-    //   const d = datos.find(d => d.clave === serie.name);
-    //   serie.data.push(d ? d.numero : 0);
-    // });
-
-    // forzamos que angular se de cuenta del cambio
-    this.merge = JSON.parse(JSON.stringify(this.merge)); 
+    return datos;
   }
 // --------------------------------------- OTRAS FUNCIONES  ---------------------------------------
 
