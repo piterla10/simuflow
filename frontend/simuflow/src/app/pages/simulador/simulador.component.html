@@ -14,7 +14,7 @@
     </article>
     <article>
         <app-herramientas-edicion (herramientaSimulador)="cambioHerramienta($event)" *ngIf="modoActivo === 'edicion'"></app-herramientas-edicion>
-        <app-herramientas-simulacion #herrSim (herramientaSimulador)="cambioHerramienta($event)" *ngIf="modoActivo === 'simulacion'"></app-herramientas-simulacion>
+        <app-herramientas-simulacion [vistaCambiada]="vistaSimulacion" #herrSim (herramientaSimulador)="cambioHerramienta($event)" *ngIf="modoActivo === 'simulacion'"></app-herramientas-simulacion>
     </article>
     <div *ngIf="sistemas.length > 1" class="boton-flotante">
        <!-- Botón que activa el modal del orden de los app-orden-sistemas -->
@@ -31,7 +31,7 @@
 <app-orden-sistemas #ordenSistemas [sistemas]="sistemas"></app-orden-sistemas>
 <!-- grid de trabajo -->
 <section class="grid-container">
-    <article class="grid" [style.--cols]="columnas" [style.--rows]="filas">
+    <article class="grid" [style.--cols]="columnas" [style.--rows]="filas" *ngIf="vistaSimulacion == 'grid'">
         <div class="cell"
         *ngFor="let cell of datosGrid"
         [class.selected]="celdaSeleccionada === cell"
@@ -47,5 +47,6 @@
             </div>
         </div>
     </article>
+    <article echarts [options]="options" [merge]="merge" *ngIf="vistaSimulacion == 'grafico'" class="grafico"></article>
 </section>
 

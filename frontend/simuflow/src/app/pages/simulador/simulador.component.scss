@@ -54,7 +54,6 @@
 .grid-container {
   width: 95vw;
   margin: 0 auto;
-  height: 70vh;
   border: 2px white solid;
   height: 80vh;
 }
@@ -67,6 +66,13 @@
   /* Las variables --cols y --rows vienen del TypeScript */
   grid-template-columns: repeat(var(--cols), 1fr);
   grid-template-rows: repeat(var(--rows), 1fr);
+  background-color: var(--blanco1);
+}
+
+.grafico {
+  width: 100%;
+  height: 100%;
+  /* Las variables --cols y --rows vienen del TypeScript */
   background-color: var(--blanco1);
 }
 

@@ -1,6 +1,6 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { NavbarComponent } from '../../componentes_comunes/navbar/navbar.component';
-import { Cell, CellElement, Deposito, Generador } from '../../services/Cell';
+import { Cell, CellElement, Deposito, Generador, Tuberia, ZonaConsumo } from '../../services/Cell';
 import { CommonModule } from '@angular/common';
 import { SimulacionService } from '../../services/SimulacionService';
 import { Subscription } from 'rxjs';
@@ -14,10 +14,12 @@ import { BasuraComponent } from '../../componentes_edicion/basura/basura.compone
 import { Sistema } from '../../services/Sistema';
 import { VelocidadComponent } from "../../componentes_simulacion/velocidad/velocidad.component";
 import { OrdenSistemasComponent } from "../../componentes_simulacion/orden-sistemas/orden-sistemas.component";
+import { NgxEchartsModule } from 'ngx-echarts';
+import { fromReadableStreamLike } from 'rxjs/internal/observable/innerFrom';
 
 @Component({
   selector: 'app-simulador',
-  imports: [NavbarComponent, CommonModule, HerramientasEdicionComponent, HerramientasSimulacionComponent, CrearElementoComponent, ElementoDetallesComponent, BasuraComponent, VelocidadComponent, OrdenSistemasComponent],
+  imports: [NgxEchartsModule ,NavbarComponent, CommonModule, HerramientasEdicionComponent, HerramientasSimulacionComponent, CrearElementoComponent, ElementoDetallesComponent, BasuraComponent, VelocidadComponent, OrdenSistemasComponent],
   templateUrl: './simulador.component.html',
   styleUrl: './simulador.component.scss'
 })
@@ -66,7 +68,7 @@ export class SimuladorComponent implements OnInit {
   public timerActive: boolean = false;
   public tiempoCiclo: number = 1000; // ms
   public tiempoTranscurrido: number = 600000; // 10min en ms
-  public index: number = 0;
+  public paso: number = 0;
   // variable que controla que se pueda seguir ejecutando la simulación porque las 
   // zonas de consumo aun tienen valores
   public valido: boolean = true;
@@ -75,7 +77,6 @@ export class SimuladorComponent implements OnInit {
   public constantePorConsumo = 15;
     // maximo que puede subir la presión por bombeo
   public constantePorBombeo = 15;
-
 
   // arrays para almacenar los valores de las láminas y de producción en la simulacion
   public produccion: {id: number, valor: number[]}[] = [];
@@ -86,6 +87,13 @@ export class SimuladorComponent implements OnInit {
 
   // variable para almacenar los sistemas que se vayan creando con los elementos
   public sistemas: Sistema[] = [];
+
+  // variable que determinará la vista de la simulación
+  public vistaSimulacion: 'grid' | 'grafico' = 'grid';
+
+  // variables para generar el gráfico
+  options: any = {};
+  merge: any = {};
 
   ngOnInit(){
     // cargamos los datos de localstorage si los hay
@@ -179,6 +187,7 @@ export class SimuladorComponent implements OnInit {
       // de momento esto lo dejamos vacío 
     }
     if(modo === 'edicion'){
+      this.vistaSimulacion = 'grid';
       this.herramientaEdicion = 'seleccionar';
       this.stop();
     }
@@ -213,6 +222,12 @@ export class SimuladorComponent implements OnInit {
         this.abrirModales('basura');
         break;
       // ++++++++++++++++++++++  MODO SIMULACIÓN  ++++++++++++++++++++++
+      case 'grafico':
+          this.vistaSimulacion = 'grafico';
+        break;
+      case 'grid':
+          this.vistaSimulacion = 'grid';
+        break;
       case 'play':
           this.play();
         break;
@@ -532,13 +547,13 @@ export class SimuladorComponent implements OnInit {
                 ${format(elemento.pctActual * 100)}%`;
       case 'consumo':
         // consumo actual
-        if(elemento.datosSimulacion[this.index] == 0){
+        if(elemento.datosSimulacion[this.paso] == 0){
           return '0';
         }
-        if(!elemento.datosSimulacion[this.index]){
+        if(!elemento.datosSimulacion[this.paso]){
           return '-1';
         }
-          return `${format(elemento.datosSimulacion[this.index])}`;
+          return `${format(elemento.datosSimulacion[this.paso])}`;
       case 'tuberia':
         // presión actual
         return `${format(elemento.presionActual)}`;
@@ -880,13 +895,13 @@ export class SimuladorComponent implements OnInit {
       if(this.valido){
         // ejecutamos los calculos de todos los sistemas para el siguiente paso
         for(const sistema of this.sistemas){
-          sistema.emitir(this.index, this.tiempoTranscurrido, this.produccion, this.constantePorConsumo, this.constantePorBombeo);
+          sistema.emitir(this.paso, this.tiempoTranscurrido, this.produccion, this.constantePorConsumo, this.constantePorBombeo);
           // comprobamos que se pueden seguir ejecutando 
           if(!sistema.valido){
             this.valido = false;
           }
         }
-        this.index++;
+        this.paso++;
         this.play()
       }
     }, this.tiempoCiclo);
@@ -905,13 +920,13 @@ export class SimuladorComponent implements OnInit {
     // si se puede hacer el step
     if(this.valido){
       for(const sistema of this.sistemas){
-        sistema.emitir(this.index, this.tiempoTranscurrido, this.produccion, this.constantePorConsumo, this.constantePorBombeo);
+        sistema.emitir(this.paso, this.tiempoTranscurrido, this.produccion, this.constantePorConsumo, this.constantePorBombeo);
         // comprobamos que se pueden seguir ejecutando 
         if(!sistema.valido){
           this.valido = false;
         }
       }
-      this.index++;
+      this.paso++;
     }
   }
 
@@ -922,7 +937,7 @@ export class SimuladorComponent implements OnInit {
     // cambiamos el icono de pause a play ya que el activo es pause al parar
     this.herramientaSim.herramientaActiva = 'pause';
     // reiniciamos los datos de la simulación
-    this.index = 0;
+    this.paso = 0;
     this.valido = true;
 
     // reiniciamos los valores del grid y del sistema
@@ -996,10 +1011,10 @@ export class SimuladorComponent implements OnInit {
       const g = this.datosGrid.find(d => d.content?.id == gen.id)!.content as Generador;
       // de forma que si es la primera vez que se hace, que solo se actualice el primer dato de valor
       if(gen.valor.length - 1  == 0 && this.valido){
-        gen.valor[this.index] = g.produccion;
+        gen.valor[this.paso] = g.produccion;
       // pero si ya hemos avanzado algún paso en la simulación, que guarde el valor actual en una nueva 
       // posición, para que tenga tantos valores como pasos se vayan a ejecutar. En el paso 2 habrán 2 valores
-      }else if(gen.valor.length == this.index){
+      }else if(gen.valor.length == this.paso){
         gen.valor.push(g.produccion);
       }
     }
@@ -1012,10 +1027,10 @@ export class SimuladorComponent implements OnInit {
       const l = this.datosGrid.find(d => d.content?.id == dep.id)!.content as Deposito;
       // de forma que si es la primera vez que se hace, que solo se actualice el primer dato de valor
       if(dep.valor.length - 1  == 0 && this.valido){
-        dep.valor[this.index] = l.alturaActual;
+        dep.valor[this.paso] = l.alturaActual;
       // pero si ya hemos avanzado algún paso en la simulación, que guarde el valor actual en una nueva 
       // posición, para que tenga tantos valores como pasos se vayan a ejecutar. En el paso 2 habrán 2 valores
-      }else if(dep.valor.length == this.index){
+      }else if(dep.valor.length == this.paso){
         dep.valor.push(l.alturaActual);
       }
     }
@@ -1143,6 +1158,174 @@ export class SimuladorComponent implements OnInit {
     this.registrarEnArrayCargando();
   }
 
+// --------------------------------------- FUNCIONES PARA MOSTRAR EL GRAFICO ---------------------------------------
+  // función que se encarga de registrar los valores de los sistemas en options para los charts
+  registrarOptions(){
+    // hay que crear en legend -> data una lista de etiquetas que tendrá cada linea tendrá que estar
+    // en el mismo orden que luego en series en merge para que sean representados correctamente
+    let leyenda: {nombre: string, yAxis: number}[] = [];
+
+    // registramos en el array leyenda las variables propias de cada sistema
+    this.sistemas.forEach(sistema =>{
+      leyenda.push({nombre: `-WTF ${sistema.id}`, yAxis: 0});
+      leyenda.push({nombre: `WPF ${sistema.id}`, yAxis: 0});
+      leyenda.push({nombre: `+WTF ${sistema.id}`, yAxis: 0});
+      leyenda.push({nombre: `Presion ${sistema.id}`, yAxis: 0});
+      leyenda.push({nombre: `I1 ${sistema.id}`, yAxis: 1});
+      leyenda.push({nombre: `I2 ${sistema.id}`, yAxis: 1});
+      leyenda.push({nombre: `I3 ${sistema.id}`, yAxis: 1});
+      leyenda.push({nombre: `I4 ${sistema.id}`, yAxis: 1});
+    });
+
+    // ahora registramos los valores de los depósitos, tuberías, bombas y zonas de consumo
+    this.sistemas.forEach(sistema =>{
+      for(const deposito of sistema.depositos){
+        // guardamos el nombre para la comprobación de después
+        const nombre = `HWT ${deposito.content?.id}`;
+        // si el depósito ya se encuentra en el array de leyenda entonces no se guarda
+        if(!leyenda.find(e => e.nombre === nombre)) {
+          leyenda.push({ nombre, yAxis: 1 });
+        }
+      }
+      
+      // lo mismo con el estado de las bombas
+      for(const generador of sistema.generadores){
+        const nombre = `PS ${generador.content?.id}`;
+        if(!leyenda.find(e => e.nombre === nombre)) {
+          leyenda.push({nombre, yAxis: 1});
+        }
+      }
+
+      // y finalizamos con  las zonas de consumo
+      for(const zona of sistema.consumo){
+        const nombre = `CC ${zona.content?.id}`;
+        if(!leyenda.find(e => e.nombre === nombre)) {
+          leyenda.push({nombre, yAxis: 0});
+        }
+      }
+    });
+    
+    this.options = {
+      legend: {
+        data: leyenda.map(e => e.nombre)
+      },
+      toolbox: {
+        feature: {
+          saveAsImage: {}
+        }
+      },
+      xAxis: {
+        type: 'category',
+        boundaryGap: false,
+        data: []
+      },
+      yAxis: [
+        {
+          name: 'Flow(m³/s)/Preassure mwc',
+          type: 'value'
+        },
+        {
+          name: 'Influence/HWT',
+          type: 'value'
+        },
+      ],
+      dataZoom: [
+      {
+        type: 'inside',
+        start: 0,
+        end: 1000
+      },
+      {
+        start: 0,
+        end: 1000
+      }
+    ],
+      series: leyenda.map(e=> ({
+        name: e.nombre,
+        type: 'line',
+        yAxisIndex: e.yAxis,
+        data: []
+      }))
+    }
+
+    // Inicializamos merge con los datos de options
+    this.merge = JSON.parse(JSON.stringify(this.options));
+  }
+  
+  actualizarGrafico(){
+    // añadimos el punto que se rellenará a continuación
+    this.merge.xAxis.data.push(String(this.merge.xAxis.data.length +1));
+    let datos: {clave: string, numero: number}[] = [];
+     // cosas que hay que sacar de cada sistema:
+    // HWT de cada tanque, -WTF, WPF, +WTF, Preassure, I1, I2, I3, I4, estado bombas[paso], valores de consumo[paso]
+    // 1                    0     0     0       0       1   1   1   1         1                 0
+    // se podrían registrar las cosas propias de cada sistema y luego para el HWT, estado bombas y valores de consumo
+    // ir recorriendo los elementos de cada sistema guardando 
+    
+    // las cosas propias que hay que registrar de cada sistema serían:
+    // -WTF, WPF, +WTF, Preassure, I1, I2, I3, I4
+    
+    // hay que crear en legend -> data una lista de etiquetas que tendrá cada linea tendrá que estar
+    // en el mismo orden que luego en series en merge para que sean representados correctamente
+
+
+    // registramos en el array leyenda las variables propias de cada sistema
+    this.sistemas.forEach(sistema =>{
+      datos.push({clave: `-WTF ${sistema.id}`,numero: sistema.aguaDesdeDeposito});
+      datos.push({clave: `WPF ${sistema.id}`, numero: sistema.aguaDesdeBomba});
+      datos.push({clave: `+WTF ${sistema.id}`, numero: sistema.aguaHaciaDeposito});
+      const tuberia = sistema.tuberia.content as Tuberia;
+      datos.push({clave: `Presion ${sistema.id}`, numero: tuberia.presionActual});
+      datos.push({clave: `I1 ${sistema.id}`, numero: sistema.agente1.influencia});
+      datos.push({clave: `I2 ${sistema.id}`, numero: sistema.agente2.influencia});
+      datos.push({clave: `I3 ${sistema.id}`, numero: sistema.agente3.influencia});
+      datos.push({clave: `I4 ${sistema.id}`, numero: sistema.agente4.Im});
+    });
+
+    // ahora registramos los valores de los depósitos, tuberías, bombas y zonas de consumo
+    this.sistemas.forEach(sistema =>{
+      for(const deposito of sistema.depositos){
+        // guardamos el nombre para la comprobación de después
+        const nombre = `HWT ${deposito.content?.id}`;
+        // si el depósito ya se encuentra en el array de leyenda entonces no se guarda
+        if(!datos.find(d => d.clave === nombre)){
+          const dep = deposito.content as Deposito;
+          datos.push({clave: nombre, numero: dep.alturaActual});
+        }
+      }
+      
+      // lo mismo con el estado de las bombas
+      for(const generador of sistema.generadores){
+        const nombre = `PS ${generador.content?.id}`;
+        if(!datos.find(d => d.clave === nombre)){
+          const gen = generador.content as Generador;
+          datos.push({clave: nombre, numero: gen.produccion});
+        }
+      }
+
+      // y finalizamos con  las zonas de consumo
+      for(const zona of sistema.consumo){
+        const nombre = `CC ${zona.content?.id}`;
+        if(!datos.find(d => d.clave === nombre)){
+          const zon = zona.content as ZonaConsumo;
+          datos.push({clave: nombre, numero: zon.datosSimulacion[this.paso]});
+        }
+      }
+    });
+
+    for(let i = 0; i < this.merge.series.length ; i++){
+      this.merge.series[i].data.push(datos[i].numero);
+    }
+
+    // otra forma de hacer el for de antes más segura:
+    // this.merge.series.forEach(serie => {
+    //   const d = datos.find(d => d.clave === serie.name);
+    //   serie.data.push(d ? d.numero : 0);
+    // });
+
+    // forzamos que angular se de cuenta del cambio
+    this.merge = JSON.parse(JSON.stringify(this.merge)); 
+  }
 // --------------------------------------- OTRAS FUNCIONES  ---------------------------------------
 
 

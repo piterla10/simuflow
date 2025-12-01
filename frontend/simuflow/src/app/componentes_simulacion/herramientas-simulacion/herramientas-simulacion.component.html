@@ -1,4 +1,5 @@
-<img class="steps" src="assets/step.png" alt="step atras" (click)="setHerramienta('stepBack')" >
+<img *ngIf="vistaActiva === 'grafico'" class="reloj" src="assets/grid.png" alt="vista grid" (click)="setHerramienta('grid')" >
+<img *ngIf="vistaActiva === 'grid'" class="reloj" src="assets/grafico.png" alt="vista grafico" (click)="setHerramienta('grafico')" >
 <img *ngIf="herramientaActiva === 'pause'" src="assets/play.png" alt="play" (click)="setHerramienta('play')">
 <img *ngIf="herramientaActiva === 'play'" src="assets/pause.png" alt="pause" (click)="setHerramienta('pause')">
 <img src="assets/stop.png" alt="stop" (click)="setHerramienta('stop')">
