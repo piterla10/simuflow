@@ -27,6 +27,10 @@ export class SimulacionService {
   private constantesCargadas = new BehaviorSubject<any>(null);
   constantesCargadas$ = this.constantesCargadas.asObservable();
 
+  // observable creado para la descarga de los arrays de lamina y producción
+  private descargarDatos = new Subject<void>();
+  descargarDatos$ = this.descargarDatos.asObservable();
+
 
   // Función que llama el navbar para que cambie la variable y 
   // detecte el cambio el simulador
@@ -52,6 +56,10 @@ export class SimulacionService {
   // función para mandar los datos si ya existian a las constantes
   recibirConstantesCargadas(data: any){
     this.constantesCargadas.next(data);
+  }
+
+  descargaDatos(){
+    this.descargarDatos.next();
   }
 
 }

@@ -60,6 +60,8 @@ export class SimuladorComponent implements OnInit {
   private suscripcionPorBombeo!: Subscription;
   private suscripcionPorConsumo!: Subscription;
 
+  private descargarDatos!: Subscription;
+
 
   // para el manejo del Grid
   // publico para que se pueda acceder desde el html
@@ -119,6 +121,10 @@ export class SimuladorComponent implements OnInit {
     this.guardarDatos = this.simulacionService.guardarDatos$.subscribe(() => {
       this.guardarDatosSimulacion();
     });
+
+    this.descargarDatos = this.simulacionService.descargarDatos$.subscribe(() =>{
+      this.descargaDatos();
+    })
 
     // cargamos los datos de un archivo cuando se nos pase uno
     this.cargarDatos = this.simulacionService.cargarDatos$.subscribe(datos =>{
@@ -910,8 +916,6 @@ export class SimuladorComponent implements OnInit {
       if(this.paso == 0){
         this.registrarOptions();
       }
-        // rellenamos merge
-        this.actualizarGrafico();
       
 
       if(this.valido){
@@ -924,7 +928,10 @@ export class SimuladorComponent implements OnInit {
           }
         }
         this.paso++;
-        this.play()
+        // rellenamos el merge 
+        this.actualizarGrafico();
+
+        this.play();
       }
     }, this.tiempoCiclo);
   }
@@ -940,13 +947,9 @@ export class SimuladorComponent implements OnInit {
     this.guardarDatoDeLamina();
 
     if(this.paso == 0){
-        this.registrarOptions();
+      this.registrarOptions();
     }
-      this.actualizarGrafico();
-    
-      // rellenamos merge
 
-    // this.actualizarGrafico();
     // si se puede hacer el step
     if(this.valido){
       for(const sistema of this.sistemas){
@@ -957,6 +960,7 @@ export class SimuladorComponent implements OnInit {
         }
       }
       this.paso++;
+      this.actualizarGrafico();
     }
   }
 
@@ -1093,7 +1097,25 @@ export class SimuladorComponent implements OnInit {
     enlace.click();
 
     URL.revokeObjectURL(url);
+  }
 
+  descargaDatos(){
+    const datos ={
+      laminas: this.laminas,
+      produccion: this.produccion
+    };
+
+    const contenido = JSON.stringify(datos, null, 2);
+
+    const blob = new Blob([contenido], {type: 'application/json'});
+
+    const url = URL.createObjectURL(blob);
+    const enlace = document.createElement('a');
+    enlace.href = url;
+    enlace.download = `${this.info.nombre} datos.json`;
+    enlace.click();
+
+    URL.revokeObjectURL(url);
   }
 
   // para crear el grid
@@ -1212,7 +1234,7 @@ export class SimuladorComponent implements OnInit {
       },
       toolbox: {
         feature: {
-          saveAsImage: {}
+          saveAsImage: {},
         }
       },
       xAxis: {

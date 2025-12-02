@@ -69,6 +69,11 @@ export class ModalOpcionesComponent {
     
   }
 
+  descargarDatos(){
+    this.simulacionService.descargaDatos();
+    this.cerrarModal();
+  }
+
   volverInicio(){
     localStorage.clear();
     this.cerrarModal();

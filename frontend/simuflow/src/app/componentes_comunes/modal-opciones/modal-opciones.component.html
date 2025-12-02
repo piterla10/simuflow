@@ -5,6 +5,7 @@
   style="display: none;" 
   #inputArchivo
 />
+
 <p *ngIf="errorArchivoVacio">*Selecciona un archivo valido*</p>
 
 <div class="modal-overlay" *ngIf="visible">
@@ -15,6 +16,7 @@
     <button type="button" (click)="guardarSimulacion()">Guardar</button>
     <button type="button" (click)="inputArchivo.click()">Cargar</button>
     <button type="button" (click)="abrirConstantes()">Constantes</button>
+    <button type="button" (click)="descargarDatos()">Descargar datos simulación</button>
   </div>
 </div>
 <app-constantes #constantes></app-constantes>
