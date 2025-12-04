@@ -39,6 +39,7 @@
             <div *ngIf="cell.content" class="cell-content">
                 <img [src]="imagenDeposito(cell.content)" [alt]="cell.content.tipo">
                 <p class="infoElemento">{{infoElemento(cell.content)}}</p>
+                <p class="idElemento">{{cell.content.id}}</p>
                 <p class="infoSistema" *ngIf="cell.content.sistema.length > 0">
                     <ng-container *ngFor="let id of infoSistema(cell)">
                         <div>{{ id }}</div>
