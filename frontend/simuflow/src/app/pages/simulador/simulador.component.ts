@@ -191,6 +191,7 @@ export class SimuladorComponent implements OnInit {
     this.cargarDatos?.unsubscribe();
     this.suscripcionPorBombeo?.unsubscribe();
     this.suscripcionPorConsumo?.unsubscribe();
+    this.descargarDatos?.unsubscribe();
   }
 
   // --------------------------------------- SELECCIÓN DE MODO Y CAMBIO DE HERRAMIENTA ---------------------------------------
